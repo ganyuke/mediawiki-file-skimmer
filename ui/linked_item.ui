@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<interface>
+  <template class="SidebarLinkRow" parent="GtkListBoxRow">
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">horizontal</property>
+        <property name="spacing">6</property>
+        <child>
+          <object class="GtkLabel" id="link_label">
+            <property name="use-markup">true</property>
+            <property name="selectable">true</property>
+            <property name="xalign">0</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Cambalache 0.96.0 -->
+<interface>
+<template parent="GtkDialog" class="MediaWikiQueueDialog">
+    <property name="destroy-with-parent">True</property>
+    <property name="title">Article queue</property>
+    <property name="visible">True</property>
+    <child internal-child="action_area">
+      <object class="GtkBox">
+        <property name="halign">fill</property>
+        <property name="hexpand">true</property>
+        <property name="orientation">horizontal</property>
+        <child>
+          <object class="GtkBox">
+            <property name="hexpand">True</property>
+            <property name="orientation">vertical</property>
+            <property name="spacing">12</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="label">Queue</property>
+                <property name="xalign">0</property>
+                <attributes>
+                  <attribute name="weight" value="bold"/>
+                </attributes>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow">
+                <property name="height-request">300</property>
+                <property name="hscrollbar-policy">never</property>
+                <property name="vexpand">True</property>
+                <child>
+                  <object class="GtkListBox" id="queue_list"/>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">12</property>
+                <child>
+                  <object class="GtkEntry" id="queue_entry">
+                    <property name="editable">True</property>
+                    <property name="hexpand">True</property>
+                    <property name="placeholder-text">File/Category name</property>
+                    <property name="sensitive">True</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="append_page">
+                    <property name="label">Append</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="load_category">
+                    <property name="label">Fetch</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+  </interface>
