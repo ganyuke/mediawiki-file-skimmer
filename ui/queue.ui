@@ -1,7 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- Created with Cambalache 0.96.0 -->
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.96.1 -->
 <interface>
-<template parent="GtkDialog" class="MediaWikiQueueDialog">
+  <!-- interface-name queue.ui -->
+  <requires lib="gtk" version="4.0"/>
+  <template class="MediaWikiQueueDialog" parent="GtkDialog">
     <property name="destroy-with-parent">True</property>
     <property name="title">Article queue</property>
     <property name="visible">True</property>
@@ -63,4 +65,4 @@
       </object>
     </child>
   </template>
-  </interface>
+</interface>

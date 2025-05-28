@@ -68,6 +68,7 @@
               <object class="GtkButton" id="queue_button">
                 <property name="icon-name">view-list-symbolic</property>
                 <property name="label">Queue</property>
+                <property name="visible">False</property>
                 <signal name="clicked" handler="open_queue"/>
               </object>
             </child>
@@ -251,12 +252,22 @@
               </object>
             </child>
             <child>
-              <object class="GtkSpinner">
-                <property name="spinning">True</property>
+              <object class="GtkBox">
+                <property name="halign">end</property>
+                <property name="hexpand">True</property>
+                <property name="spacing">8</property>
+                <child>
+                  <object class="GtkLabel" id="async_label">
+                    <property name="visible">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkSpinner" id="async_spinner">
+                    <property name="visible">False</property>
+                    <property name="spinning">True</property>
+                  </object>
+                </child>
               </object>
-            </child>
-            <child>
-              <object class="AdwSpinner"/>
             </child>
           </object>
         </child>

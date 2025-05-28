@@ -1,0 +1,92 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.96.1 -->
+<interface>
+  <!-- interface-name submission_modal.ui -->
+  <requires lib="gtk" version="4.0"/>
+  <template class="mediawiki-submit-dialog" parent="GtkDialog">
+    <property name="halign">baseline</property>
+    <property name="title">Review changes</property>
+    <property name="width-request">500</property>
+    <child internal-child="action_area">
+      <object class="GtkBox">
+        <property name="halign">baseline</property>
+        <property name="hexpand">True</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">12</property>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="spacing">6</property>
+            <child>
+              <object class="GtkBox" id="wikitext-review-panel">
+                <property name="halign">baseline</property>
+                <property name="orientation">vertical</property>
+                <property name="spacing">6</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="label">Wikitext changes</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTextView" id="wikitext-view-field">
+                    <property name="buffer">
+                      <object class="GtkTextBuffer" id="wikitext-text-view-buffer">
+                        <property name="text">lorem ipsum</property>
+                      </object>
+                    </property>
+                    <property name="editable">False</property>
+                    <property name="height-request">300</property>
+                    <property name="monospace">True</property>
+                    <property name="vexpand">True</property>
+                    <property name="wrap-mode">word-char</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox" id="rename-review-panel">
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="label">Page rename</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="spacing">6</property>
+                    <child>
+                      <object class="GtkLabel" id="rename-review-label">
+                        <property name="halign">start</property>
+                        <property name="label">orignial page -&gt; new page</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="spacing">12</property>
+            <child>
+              <object class="GtkButton" id="cancel-submit-button">
+                <property name="label">Cancel</property>
+                <signal name="clicked" handler="cancel-submit-button-clicked"/>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="confirm-submit-button">
+                <property name="css-classes">suggested-action</property>
+                <property name="label">Confirm</property>
+                <signal name="clicked" handler="confirm-submit-button-clicked"/>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

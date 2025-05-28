@@ -2,5 +2,9 @@
 <!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
 <!-- Created with Cambalache 0.96.1 -->
 <cambalache-project version="0.96.0" target_tk="gtk-4.0">
-  <ui template-class="MediaWikiViewerWindow" filename="base_cleaned.ui" sha256="65f8ab1ec2b9378abbd352927146942bebe3a6b2617fa3dce35e1ea57f65000d"/>
+  <ui template-class="MediaWikiViewerWindow" filename="base_cleaned.ui" sha256="4c81e1175a04285ebb31525047fc29526db7d035c8b07ec5c8a76c3af2221037"/>
+  <ui template-class="SidebarLinkRow" filename="linked_item.ui" sha256="392440f4277eeb739a0b0ae0ec58eeec1be186fbb54180112ed2492bf0fd7966"/>
+  <ui template-class="MediaWikiQueueDialog" filename="queue.ui" sha256="083ff729c470ec74649f7ebdfabcc86ce7650dadf1094fabe23d87fc1b725c8b"/>
+  <ui template-class="MediaWikiQueueItem" filename="queue_item.ui" sha256="7423188a63d139dad819d8e6fa639070ebaaeb6e10a3b1b11e1fbc6b51ed44e1"/>
+  <ui template-class="mediawiki-submit-dialog" filename="submission_modal.ui" sha256="c19fbb7e4935ce4214e5024fda0a12b7f54e39d294811982d7da5b69877621d5"/>
 </cambalache-project>

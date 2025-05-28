@@ -1,5 +1,4 @@
 import json
-import httpx
 from pydantic.dataclasses import dataclass
 from pydantic import Field, ValidationError
 

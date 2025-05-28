@@ -1,7 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- Created with Cambalache 0.96.0 -->
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.96.1 -->
 <interface>
-  <template parent="GtkBox" class="MediaWikiQueueItem">
+  <!-- interface-name queue_item.ui -->
+  <requires lib="gtk" version="4.0"/>
+  <template class="MediaWikiQueueItem" parent="GtkBox">
     <property name="halign">baseline</property>
     <property name="spacing">5</property>
     <property name="width-request">10</property>

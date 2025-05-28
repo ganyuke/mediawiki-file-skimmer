@@ -3,6 +3,8 @@ import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, GLib # pyright: ignore[reportMissingModuleSource]
 
+from urllib.parse import quote
+from app.link_row import SidebarLinkRow
 from api.api import CategoryBatcher
 from edit_queue.edits import ModificationTracker
 from edit_queue.queue_manager import QueueManager
@@ -43,6 +45,10 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
     _login_label: Gtk.Label = Gtk.Template.Child(name="login_label")
     _login_button: Gtk.Button = Gtk.Template.Child(name="login_button")
 
+    # spinners
+    _async_label: Gtk.Label = Gtk.Template.Child(name="async_label")
+    _async_spinner: Gtk.Spinner = Gtk.Template.Child(name="async_spinner")
+
     # app state
     _queue_manager: QueueManager | None = None
     _deps: AppDeps
@@ -56,19 +62,43 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
             image_preview=self._image_preview,
             page_title_entry=self._page_title_entry,
             links_list=self._links_list,
-            wikitext_buffer=self._wikitext_buffer
+            wikitext_buffer=self._wikitext_buffer,
+            rename_button=self._should_rename
             )
 
         self._water_bottle = WaterBottle(deps, editor_ui)
 
-    def _load_current(self):
+    def hide_spinner(self):
+        self._async_label.set_visible(False)
+        self._async_spinner.set_visible(False)
+
+    def show_spinner(self, is_spinner_enable: bool, label_text: str):
+        self._async_label.set_visible(True)
+        self._async_spinner.set_visible(True)
+        self._async_label.set_text(label_text)
+        self._async_spinner.set_spinning(is_spinner_enable)
+
+    def set_nav_buttons(self, prev_on: bool, next_on: bool):
+        self._previous_btn.set_sensitive(prev_on)
+        self._next_btn.set_sensitive(next_on)
+
+    def _update_move_btns(self):
+        if (self._queue_manager is None):
+            return
+
+        canPrev = self._queue_manager.can_prev()
+        canNext = self._queue_manager.can_next()
+
+        _ = GLib.idle_add(self.set_nav_buttons, canPrev, canNext)
+
+    def _hydrate_current(self):
         if (self._queue_manager is None):
             return
 
         self._update_move_btns()
         data = self._queue_manager.current_page()
         if (data is not None):
-            self._water_bottle.load_page(data)
+            self._water_bottle.load_page(data, self._construct_link_list(data.linked_pages))
 
     async def _load_batch(self):
         button = self._load_btn
@@ -76,31 +106,34 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
             _ = GLib.idle_add(button.set_sensitive, True)
             return
 
+        _ = GLib.idle_add(self.show_spinner, True, "Fetching batch...")
         await self._queue_manager.get_batch()
+        _ = GLib.idle_add(self.hide_spinner)
         _ = GLib.idle_add(self._batch_btn.set_sensitive, self._queue_manager.can_fetch_more())
-        self._load_current()
-    
-    def _create_query_manager(self, category: str):
-        isStart = self._queue_manager is None
+        self._hydrate_current()
 
-        categoryBatcher: CategoryBatcher = CategoryBatcher(
-            base_url=self._deps.app_config.get_api_url(),
-            category=category,
-            client=self._deps.http_client
-            )
-        modificationTracker: ModificationTracker = ModificationTracker(categoryBatcher.pages)
-        self._queue_manager = QueueManager(categoryBatcher, modificationTracker)
+    async def _setup_category(self, category: str):
+        def create_query_manager(category: str):
+            isStart = self._queue_manager is None
 
-        if (isStart):
-            def desensitize():
-                self._content_container.set_sensitive(True)
-                self._navigation_container.set_sensitive(True)
-            _ = GLib.idle_add(desensitize)
-            
-    async def _check_category(self, category: str):
-        is_valid = await self._deps.http_client.check_category_valid(category)
-        if (is_valid):
-            self._create_query_manager(category)
+            categoryBatcher: CategoryBatcher = CategoryBatcher(
+                base_url=self._deps.app_config.get_api_url(),
+                category=category,
+                client=self._deps.http_client
+                )
+            modificationTracker: ModificationTracker = ModificationTracker(categoryBatcher.pages)
+            self._queue_manager = QueueManager(categoryBatcher, modificationTracker)
+
+            if (isStart):
+                def desensitize():
+                    self._content_container.set_sensitive(True)
+                    self._navigation_container.set_sensitive(True)
+                _ = GLib.idle_add(desensitize)
+
+        is_category_valid = await self._deps.http_client.check_category_valid(category)
+
+        if (is_category_valid):
+            create_query_manager(category)
             await self._load_batch()
         else:
             def set_error():
@@ -128,6 +161,40 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
             if (success):
                 _ = GLib.idle_add(logout)
 
+    def _construct_link_list(self, link_list: list[str]) -> list[SidebarLinkRow]:
+        rows: list[SidebarLinkRow] = []
+
+        def replace_title(_: SidebarLinkRow, new_title: str):
+            if (self._queue_manager is None):
+                return
+            current_page = self._queue_manager.current_page()
+            if (current_page is None):
+                return
+            original_title: str = current_page.original.title 
+            title_pieces: list[str] = original_title.split(".")
+            suffix = title_pieces.pop()
+            suffix = suffix.lower()
+            file_title = f'File:{new_title.strip()}.{suffix}'
+            self._should_rename.set_active(True)
+            self._page_title_entry.set_text(file_title)
+
+        def paste_link(_: SidebarLinkRow, link_title: str):
+            link_text = f'[[{link_title}]]'
+            insert_mark = self._wikitext_buffer.get_insert()
+            insert_iter = self._wikitext_buffer.get_iter_at_mark(insert_mark)
+            self._wikitext_buffer.insert(insert_iter, link_text)
+
+        for title in link_list:
+            sanitizedTitle = quote(title)
+            url = self._deps.app_config.get_wiki_url() + "/" + sanitizedTitle
+            row = SidebarLinkRow(title, url)
+            _ = row.connect("request_rename", replace_title)
+            _ = row.connect("request_paste", paste_link)
+
+            rows.append(row)
+        
+        return rows
+
     @Gtk.Template.Callback(name="on_category_changed")
     def on_category_changed(self, field: Gtk.Entry):
         text = field.get_text()
@@ -143,7 +210,7 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
         category = category.strip()
 
         def async_trigger():
-            _ = self._deps.event_loop.create_task(self._check_category(category))
+            _ = self._deps.event_loop.create_task(self._setup_category(category))
         __ = self._deps.event_loop.call_soon_threadsafe(async_trigger)
 
 
@@ -179,39 +246,29 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
                 self._queue_manager.modificationTracker.set_renamed_title(originalTitle, None)
                 self._page_title_entry.set_text(originalTitle)
 
-    def _update_move_btns(self):
-        if (self._queue_manager is None):
-            return
-
-        canPrev = self._queue_manager.can_prev()
-        _ = GLib.idle_add(self._previous_btn.set_sensitive, canPrev)
-
-        canNext = self._queue_manager.can_next()
-        _ = GLib.idle_add(self._next_btn.set_sensitive, canNext)
-
     @Gtk.Template.Callback(name="on_file_name_changed")
     def on_file_name_changed(self, entry: Gtk.Entry):
         if (self._queue_manager is None):
             return
-        currPage = self._queue_manager.current_page()
-        if (currPage is None):
+        current_page = self._queue_manager.current_page()
+        if (current_page is None):
             return
-        title = currPage.title 
+        original_title = current_page.original.title 
         text = entry.get_text()
-        self._queue_manager.modificationTracker.set_renamed_title(title, text)
+        self._queue_manager.modificationTracker.set_renamed_title(original_title, text)
 
     @Gtk.Template.Callback(name="on_wikitext_changed")
     def on_wikitext_changed(self, buffer: Gtk.TextBuffer):
         if (self._queue_manager is None):
             return
-        currPage = self._queue_manager.current_page()
-        if (currPage is None):
+        current_page = self._queue_manager.current_page()
+        if (current_page is None):
             return
-        title = currPage.title 
+        original_title = current_page.original.title 
         start = buffer.get_start_iter()
         end = buffer.get_end_iter()
         text = buffer.get_text(start, end, include_hidden_chars=True)
-        self._queue_manager.modificationTracker.set_altered_body(title, text)
+        self._queue_manager.modificationTracker.set_altered_body(original_title, text)
 
     @Gtk.Template.Callback(name="on_prev_clicked")
     def on_prev_clicked(self, _: Gtk.Button):
@@ -219,7 +276,7 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
             return
 
         self._queue_manager.prev()
-        self._load_current()
+        self._hydrate_current()
 
     @Gtk.Template.Callback(name="on_next_clicked")
     def on_next_clicked(self, _: Gtk.Button):
@@ -227,4 +284,4 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
             return
 
         self._queue_manager.next()
-        self._load_current()
+        self._hydrate_current()

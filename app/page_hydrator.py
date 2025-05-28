@@ -7,7 +7,6 @@ from gi.repository import GdkPixbuf, Gtk, GLib # pyright: ignore[reportMissingMo
 
 from edit_queue.queue_manager import PresentationData
 from dataclasses import dataclass
-from urllib.parse import quote
 
 # data bag for hydrator helper class
 @dataclass
@@ -16,6 +15,7 @@ class EditorUi:
     page_title_entry: Gtk.Entry
     links_list:  Gtk.ListBox
     wikitext_buffer: Gtk.TextBuffer
+    rename_button: Gtk.CheckButton
 
 class WaterBottle:
     '''
@@ -29,15 +29,6 @@ class WaterBottle:
     def __init__(self, deps: AppDeps, editor_ui: EditorUi):
         self._editor_ui = editor_ui
         self._deps = deps
-
-    def _load_link_list(self, link_list: list[str]):
-        self._editor_ui.links_list.remove_all()
-
-        for title in link_list:
-            sanitizedTitle = quote(title)
-            url = self._deps.app_config.get_wiki_url() + "/" + sanitizedTitle
-            row = SidebarLinkRow(title, url)
-            self._editor_ui.links_list.append(row)
 
     async def _set_image_from_url(self, url: str):
         if url in self._image_cache:
@@ -57,13 +48,17 @@ class WaterBottle:
 
         _ = GLib.idle_add(self._editor_ui.image_preview.set_pixbuf, pixbuf)
 
-    def load_page(self, page: PresentationData):
+    def load_page(self, page: PresentationData, rows: list[SidebarLinkRow]):
         _ = self._deps.event_loop.call_soon_threadsafe(
         lambda: self._deps.event_loop.create_task(self._set_image_from_url(page.image_path))
         )
-        _ = GLib.idle_add(self._hydrate_interface, page)
+        _ = GLib.idle_add(self._hydrate_interface, page, rows)
 
-    def _hydrate_interface(self, data: PresentationData):
+    def _hydrate_interface(self, data: PresentationData, rows: list[SidebarLinkRow]):
         self._editor_ui.page_title_entry.set_text(data.title)
         self._editor_ui.wikitext_buffer.set_text(data.wikitext)
-        self._load_link_list(data.linked_pages)
+        self._editor_ui.links_list.remove_all()
+        self._editor_ui.rename_button.set_active(data.title != data.original.title)
+
+        for row in rows:
+            self._editor_ui.links_list.append(row)
