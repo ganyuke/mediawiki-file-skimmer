@@ -1,6 +1,7 @@
 import httpx
 from pydantic import ValidationError
 from api.databags import CategoryResp, CsrfTokenResponse, LoginResponse, TokenResponse, UserInfo, UserInfoResponse
+from version import __user_agent__
 
 class MediaWikiClient:
     _api_url: str
@@ -8,7 +9,7 @@ class MediaWikiClient:
     _user_info: UserInfo | None = None
 
     HEADERS: dict[str, str] = {
-        "User-Agent": "MediaWikiEditor/0.1.0"
+        "User-Agent": __user_agent__
     }
 
     LOGIN_TOKEN_PARAM: dict[str, str] = {
