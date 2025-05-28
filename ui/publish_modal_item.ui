@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.96.1 -->
+<interface>
+  <!-- interface-name publish_modal_item.ui -->
+  <requires lib="gtk" version="4.0"/>
+  <object class="GtkListBoxRow">
+    <child>
+      <object class="GtkBox">
+        <property name="spacing">12</property>
+        <child>
+          <object class="GtkLabel" id="publish-page-label">
+            <property name="label">new page</property>
+            <property name="wrap">True</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="halign">end</property>
+            <property name="hexpand">True</property>
+            <child>
+              <object class="GtkLabel" id="publish-status-label">
+                <property name="label">Uploading...</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSpinner">
+                <property name="spinning">True</property>
+                <property name="visible">False</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkImage" id="publish-checkmark-label">
+                <property name="icon-name">emblem-ok-symbolic</property>
+                <property name="visible">False</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

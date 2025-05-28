@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.96.1 -->
+<interface>
+  <!-- interface-name publish_modal.ui -->
+  <requires lib="gtk" version="4.0"/>
+  <template class="publish-dialog" parent="GtkWindow">
+    <property name="accessible-role">dialog</property>
+    <property name="modal">True</property>
+    <property name="title">Publish changes</property>
+    <child>
+      <object class="GtkBox">
+        <property name="css-classes">dialog-content</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">12</property>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="spacing">6</property>
+            <child>
+              <object class="GtkBox" id="publish-review-panel">
+                <property name="css-classes">heading</property>
+                <property name="halign">baseline</property>
+                <property name="orientation">vertical</property>
+                <property name="spacing">6</property>
+                <property name="vexpand">True</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="label">Staged pages</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkListBox">
+                    <property name="vexpand">True</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="spacing">12</property>
+            <child>
+              <object class="GtkButton" id="cancel-submit-button">
+                <property name="label">Cancel</property>
+                <signal name="clicked" handler="cancel-publish-button-clicked"/>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="confirm-publish-button">
+                <property name="css-classes">destructive-action
+
+</property>
+                <property name="label">Publish</property>
+                <signal name="clicked" handler="confirm-publish-button-clicked"/>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

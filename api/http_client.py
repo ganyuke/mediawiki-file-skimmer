@@ -12,6 +12,12 @@ class MediaWikiClient:
         "User-Agent": __user_agent__
     }
 
+    CSRF_TOKEN_PARAM: dict[str, str] = {
+        "action":"query",
+        "meta":"tokens",
+        "format":"json"
+    }
+
     LOGIN_TOKEN_PARAM: dict[str, str] = {
         "action": "query",
         "format": "json",
@@ -28,9 +34,19 @@ class MediaWikiClient:
         self._api_url = api_url
         self.client = httpx.AsyncClient(base_url=api_url, headers=self.HEADERS)
 
+    async def get_csrf_token(self) -> str | None:
+
+        resp = await self.get(params=self.CSRF_TOKEN_PARAM)
+        try:
+            csrf_resp = CsrfTokenResponse.model_validate(resp.json())
+            csrftoken = csrf_resp.query.tokens.csrftoken
+            return csrftoken
+        except (ValidationError):
+            return None
+
     async def login(self, username: str, password: str) -> UserInfo | None:
         try:
-            resp = await self.client.get(url=self._api_url, params=self.LOGIN_TOKEN_PARAM)
+            resp = await self.get(params=self.LOGIN_TOKEN_PARAM)
             _ = resp.raise_for_status()
 
             tokenJson = TokenResponse.model_validate(resp.json())
@@ -47,7 +63,7 @@ class MediaWikiClient:
 
             payload.update(self.LOGIN_PARAM)
 
-            resp = await self.client.post(url=self._api_url, data=payload)
+            resp = await self.post(data=payload)
             _ = resp.raise_for_status()
             
             try:        
@@ -69,30 +85,21 @@ class MediaWikiClient:
             return None
 
     async def logout(self):
-        csrf_param = {
-            "action":"query",
-            "meta":"tokens",
-            "format":"json"
+        csrftoken = await self.get_csrf_token()
+        if (csrftoken is None):
+            raise RuntimeError("Failed to get CSRF token during logout.")
+
+        payload = {
+            "action": "logout",
+            "token": csrftoken,
+            "format": "json"
         }
 
-        resp = await self.client.get(url=self._api_url, params=csrf_param)
-        try:
-            csrf_resp = CsrfTokenResponse.model_validate(resp.json())
-            csrftoken = csrf_resp.query.tokens.csrftoken
-
-            payload = {
-                "action": "logout",
-                "token": csrftoken,
-                "format": "json"
-            }
-            _ = await self.client.post(url=self._api_url, data=payload) # response is probably going to be '{}'
-            self._user_info = None
-            return True
-        except (ValidationError):
-            return False
+        _ = await self.post(data=payload) # response is probably going to be '{}'
+        self._user_info = None # eh, I'm sure they're logged out, right?
 
     async def get_user_data(self) -> UserInfo | None:
-        resp = await self.get(self._api_url, {
+        resp = await self.get({
             "action": "query",
             "meta": "userinfo",
             "format": "json"
@@ -108,7 +115,7 @@ class MediaWikiClient:
         return None 
 
     async def check_category_valid(self, category: str) -> bool:
-        resp = await self.get(self._api_url, {
+        resp = await self.get({
             "action": "query",
             "titles": category,
             "prop": "categoryinfo",
@@ -123,10 +130,16 @@ class MediaWikiClient:
             pass
         return False
         
-    async def get(self, url: str, params: dict[str, str] | None) -> httpx.Response:
+    async def get(self, params: dict[str, str] | None, override_url: str | None = None) -> httpx.Response:
+        url = override_url or self._api_url
+
+        with open('examples/api_calls_2.txt', 'a') as f:
+           _ = f.write(str(httpx.URL(url, params=params))+"\n")
+
         return await self.client.get(url, params=params)
 
-    async def post(self, url: str, data: dict[str, str]) -> httpx.Response:
+    async def post(self, data: dict[str, str], override_url: str | None = None) -> httpx.Response:
+        url = override_url or self._api_url
         return await self.client.post(url, data=data)
 
     async def close(self) -> None:

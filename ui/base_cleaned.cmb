@@ -2,9 +2,14 @@
 <!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
 <!-- Created with Cambalache 0.96.1 -->
 <cambalache-project version="0.96.0" target_tk="gtk-4.0">
-  <ui template-class="MediaWikiViewerWindow" filename="base_cleaned.ui" sha256="4c81e1175a04285ebb31525047fc29526db7d035c8b07ec5c8a76c3af2221037"/>
+  <css filename="editor.css" is_global="1"/>
+  <ui template-class="MediaWikiViewerWindow" filename="base_cleaned.ui" sha256="49b4629de59eeb880db5d6773a90b276a2d9b8afacf76b8fb7a94f6bf4aca9d8"/>
   <ui template-class="SidebarLinkRow" filename="linked_item.ui" sha256="392440f4277eeb739a0b0ae0ec58eeec1be186fbb54180112ed2492bf0fd7966"/>
   <ui template-class="MediaWikiQueueDialog" filename="queue.ui" sha256="083ff729c470ec74649f7ebdfabcc86ce7650dadf1094fabe23d87fc1b725c8b"/>
   <ui template-class="MediaWikiQueueItem" filename="queue_item.ui" sha256="7423188a63d139dad819d8e6fa639070ebaaeb6e10a3b1b11e1fbc6b51ed44e1"/>
-  <ui template-class="mediawiki-submit-dialog" filename="submission_modal.ui" sha256="c19fbb7e4935ce4214e5024fda0a12b7f54e39d294811982d7da5b69877621d5"/>
+  <ui template-class="staging-dialog" filename="submission_modal.ui" sha256="3c31423b382b411b84b4b186f5f96f0f3568e13764f02efd5ab8e2f880963676">
+    <css-provider>editor.css</css-provider>
+  </ui>
+  <ui template-class="publish-dialog" filename="publish_modal.ui" sha256="06ac60d079bef2151df11f9fcbec22e1a6849720c544919ebc049007ba9bd657"/>
+  <ui filename="publish_modal_item.ui" sha256="5d0ed6e2273d1dc16f7c4abb542b08ed1ad997ca40fc2f7fd550f053241fb8f5"/>
 </cambalache-project>

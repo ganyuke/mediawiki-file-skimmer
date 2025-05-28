@@ -3,20 +3,21 @@ from pydantic.dataclasses import dataclass
 from pydantic import Field, ValidationError
 
 from api.http_client import MediaWikiClient
-from api.databags import Cont, FileUsage, MediaWikiResponse, Page
+from api.databags import Cont, MediaWikiResponse, Page
 
 PARAMS = {
 	"action": "query",
 	"format": "json",
-	"prop": "revisions|imageinfo|fileusage",
+	# "prop": "revisions|imageinfo|fileusage",
+    "prop": "revisions|imageinfo",
 	"generator": "categorymembers",
 	"formatversion": "2",
 	"rvprop": "content",
 	"rvslots": "main",
 	"iiprop": "url",
 	"iilimit": "1",
-	"funamespace": "0",
-	"fulimit": "10",
+	# "funamespace": "0",
+	# "fulimit": "10",
 	"gcmtitle": "Category:Example",
 	"gcmprop": "title",
 	"gcmtype": "file",
@@ -30,7 +31,7 @@ class DataPage:
     title: str
     wikitext: str
     image_path: str
-    linked_pages: set[str] = Field(default_factory=set)
+    linked_pages: set[str] = Field(default_factory=set) # ehh, let the frontend figure it out the order
 
     def merge(self, other: "DataPage"):
         if (self.title == ""):
@@ -41,10 +42,74 @@ class DataPage:
             self.image_path = other.image_path
         self.linked_pages.update(other.linked_pages)
 
+@dataclass(frozen=True)
+class BatchResult:
+    pages: list[str]
+    complete: bool
+
+class FileUsageBatcher:
+    _http_client: MediaWikiClient
+    _conts: dict[str, Cont] = {}
+    _complete: set[str] = set()
+
+    def __init__(self, http_client: MediaWikiClient):
+        self._http_client = http_client
+
+    async def fetch_usage(self, title: str, limit: int = 50) -> BatchResult | None:
+        if (title in self._complete):
+            return None
+
+        params = {
+            "action": "query",
+            "format": "json",
+            "prop": "fileusage",
+            "formatversion": "2",
+            "titles": title,
+            "funamespace": "0",
+            "fulimit": str(limit),
+        }
+
+        cont = self._conts.get(title)
+        if (cont is not None):
+            contParams = cont.model_dump(exclude_none=True, by_alias=True)
+            params.update(contParams)
+
+        resp = await self._http_client.get(params)
+
+        linked: set[str] = set()
+
+        resp = await self._http_client.get(params=params)
+        if resp.status_code == 200:
+            try:
+                respJson: MediaWikiResponse = MediaWikiResponse.model_validate(resp.json())
+
+                complete = respJson.batchcomplete
+
+                for page in respJson.query.pages:
+                    fileusage = page.fileusage
+                    if (fileusage is not None):
+                        for usage in fileusage:
+                            linked.add(usage.title)
+                    if (complete is not None):
+                        self._complete.add(page.title)
+
+                next_cont = respJson.cont
+                if (next_cont is not None):
+                    self._conts[title] = next_cont
+            except (ValidationError) as e:
+                pass
+            except (json.JSONDecodeError, TypeError, ValueError) as e:
+                print("ERROR UNMARSHALLING JSON")
+                print(e)
+
+        return BatchResult(
+            list(linked),
+            title in self._complete
+        )
+
 class CategoryBatcher:
     pages: dict[str, DataPage] = {}
     _batch: dict[str, DataPage] = {}
-    _base_url: str
     _cont: Cont | None = None
     _batchComplete: bool = False
     _baseParams: dict[str, str]
@@ -53,8 +118,7 @@ class CategoryBatcher:
     _maxBatchWalks: int = 10
     _http_client: MediaWikiClient
 
-    def __init__(self, base_url: str, category: str, client: MediaWikiClient) -> None:
-        self._base_url = base_url
+    def __init__(self, category: str, client: MediaWikiClient) -> None:
         params: dict[str, str] = PARAMS.copy()
         params["gcmtitle"] = category
         self._baseParams = params
@@ -87,7 +151,10 @@ class CategoryBatcher:
             batchList.append(page)
 
         self._batch.clear()
-        return list(batchList)
+        return BatchResult(
+            [page.title for page in batchList],
+            batchComplete
+        )
 
     async def fetch_gcm(self) -> bool:
         params: dict[str, str] = self._baseParams.copy()
@@ -96,10 +163,7 @@ class CategoryBatcher:
             contParams = self._cont.model_dump(exclude_none=True, by_alias=True)
             params.update(contParams)
 
-        #with open('examples/api_calls.txt', 'a') as f:
-        #    _ = f.write(str(httpx.URL(self._base_url, params=params))+"\n")
-
-        resp = await self._http_client.get(url=self._base_url, params=params)
+        resp = await self._http_client.get(params=params)
         if resp.status_code == 200:
             try:
                 respJson: MediaWikiResponse = MediaWikiResponse.model_validate(resp.json())
@@ -135,7 +199,7 @@ class CategoryBatcher:
         title: str = page.title
         wikitext: str = ""
         image_path: str = ""
-        linked_pages: set[str] = set()
+        # linked_pages: set[str] = set()
 
         revs = page.revisions
         if (revs is not None):
@@ -149,14 +213,14 @@ class CategoryBatcher:
             imageinfo0 = imageinfo[0]
             image_path = imageinfo0.url
         
-        fileusage: list[FileUsage] | None = page.fileusage
-        if (fileusage is not None):
-            for usage in fileusage:
-                linked_pages.add(usage.title)
+        # fileusage: list[FileUsage] | None = page.fileusage
+        # if (fileusage is not None):
+        #     for usage in fileusage:
+        #         linked_pages.add(usage.title)
 
         return DataPage(
             title,
             wikitext = wikitext,
             image_path = image_path,
-            linked_pages = linked_pages
+            # linked_pages = linked_pages
         )

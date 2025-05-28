@@ -6,7 +6,6 @@ from api.api import DataPage
 class EntryMod:
     title: str | None = None
     wikitext: str | None = None
-    submitted: bool = False
 
     def is_empty(self) -> bool:
         return self.title is None and self.wikitext is None

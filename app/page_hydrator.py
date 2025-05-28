@@ -34,7 +34,7 @@ class WaterBottle:
         if url in self._image_cache:
             pixbuf = self._image_cache[url]
         else:
-            response = await self._deps.http_client.get(url, None)
+            response = await self._deps.http_client.get(None, override_url=url)
             _ = response.raise_for_status()
             data = response.content
 

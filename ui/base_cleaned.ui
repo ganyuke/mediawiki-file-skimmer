@@ -4,7 +4,6 @@
   <!-- interface-name base_cleaned.ui -->
   <requires lib="gio" version="2.0"/>
   <requires lib="gtk" version="4.0"/>
-  <requires lib="libadwaita" version="1.0"/>
   <template class="MediaWikiViewerWindow" parent="GtkApplicationWindow">
     <property name="default-height">600</property>
     <property name="default-width">800</property>
@@ -247,8 +246,15 @@
             <child>
               <object class="GtkButton" id="confirm_page">
                 <property name="css-classes">suggested-action</property>
-                <property name="label">Submit</property>
+                <property name="label">Stage</property>
                 <signal name="clicked" handler="on_confirm_clicked"/>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="publish_pages">
+                <property name="css-classes">destructive-action</property>
+                <property name="label">Publish changes</property>
+                <signal name="clicked" handler="on_publish_clicked"/>
               </object>
             </child>
             <child>
@@ -263,8 +269,8 @@
                 </child>
                 <child>
                   <object class="GtkSpinner" id="async_spinner">
-                    <property name="visible">False</property>
                     <property name="spinning">True</property>
+                    <property name="visible">False</property>
                   </object>
                 </child>
               </object>
@@ -290,16 +296,6 @@
       </item>
     </section>
   </menu>
-  <object class="GtkMessageDialog" id="confirm_replace_queue">
-    <property name="accessible-role">alert-dialog</property>
-    <property name="buttons">ok-cancel</property>
-    <property name="deletable">False</property>
-    <property name="destroy-with-parent">True</property>
-    <property name="message-type">warning</property>
-    <property name="modal">True</property>
-    <property name="secondary-text">This will discard the current queue. Continue?</property>
-    <property name="text">Replace queue?</property>
-  </object>
   <object class="GtkWindow">
     <child>
       <object class="GtkBox">

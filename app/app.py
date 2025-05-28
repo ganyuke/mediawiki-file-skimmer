@@ -1,6 +1,7 @@
 import gi
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gtk, Gio # pyright: ignore[reportMissingModuleSource]
+gi.require_version('Gdk', '4.0')
+from gi.repository import Gdk, Gtk, Gio # pyright: ignore[reportMissingModuleSource]
 
 import asyncio
 import threading
@@ -37,6 +38,15 @@ class MediaWikiViewerApp(Gtk.Application):
         if not hasattr(self, "_window"):
             self._window = MediaWikiViewerWindow(application=self, deps=self._deps)
         self._window.present()
+
+        provider = Gtk.CssProvider()
+        provider.load_from_path("ui/editor.css")
+
+        display = Gdk.Display.get_default()
+        if display is not None:
+            Gtk.StyleContext.add_provider_for_display(display, provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
+        else:
+            print("rip css")
 
     @override
     def do_shutdown(self) -> None:
