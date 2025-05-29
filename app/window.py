@@ -3,14 +3,37 @@ import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, GLib # pyright: ignore[reportMissingModuleSource]
 
+from app.controller import AppStateController
 from app.staging_dialog import StagingDialog
 from urllib.parse import quote
 from app.link_row import SidebarLinkRow
 from api.api import MediaWikiDataService
 from edit_queue.edits import ModificationTracker
 from edit_queue.queue_manager import QueueManager
-from app.databags import AppDeps
-from app.page_hydrator import EditorUi, WaterBottle
+from app.databags import (
+    AppDeps,
+    AsyncIndicators,
+    AuthError,
+    AutofillBody,
+    AutofillRename,
+    FailedBatchLoad,
+    HydrateCurrent,
+    CategoryUpdated,
+    EditorUi,
+    EditorWidgets,
+    EndAsync,
+    InteractableAreas,
+    LinkedPagesUi,
+    LoginControls,
+    LoginOK,
+    LogoutOK,
+    Msg,
+    NavigationControls,
+    StagingUpdated,
+    StartAsync,
+    Thaw,
+    TopLevelControls
+)
 
 @Gtk.Template(filename="ui/base_cleaned.ui")
 class MediaWikiViewerWindow(Gtk.ApplicationWindow):
@@ -27,6 +50,7 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
     _should_rename: Gtk.CheckButton = Gtk.Template.Child(name="should_rename")
 
     _linked_load_button: Gtk.Button = Gtk.Template.Child(name="linked_load_button")
+    _publish_button: Gtk.Button = Gtk.Template.Child(name="publish_pages")
 
     # hydration targets
     _image_preview: Gtk.Picture = Gtk.Template.Child(name="image_preview")
@@ -55,85 +79,105 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
     # app state
     _queue_manager: QueueManager | None = None
     _deps: AppDeps
-    _water_bottle: WaterBottle
+    _state_controller: AppStateController
 
     def __init__(self, deps: AppDeps, **kwargs): # pyright: ignore[reportUnknownParameterType, reportMissingParameterType]
         self._deps = deps
         super().__init__(**kwargs) # pyright: ignore[reportUnknownArgumentType]
 
-        editor_ui = EditorUi(
+        editor_widgets = EditorWidgets(
+            async_ind=AsyncIndicators(label=self._async_label, spinner=self._async_spinner),
+            editor_ui=EditorUi(
             image_preview=self._image_preview,
             page_title_entry=self._page_title_entry,
-            links_list=self._links_list,
             wikitext_buffer=self._wikitext_buffer,
-            rename_button=self._should_rename
+            rename_checkbox=self._should_rename
+            ),
+            linked_ui=LinkedPagesUi(
+                links_list=self._links_list,
+                links_fetch_button=self._linked_load_button
+            ),
+            nav_ctrls=NavigationControls(
+                next_button=self._next_btn,
+                prev_button=self._previous_btn,
+                stage_button=self._confirm_btn,
+                publish_button=self._publish_button
+            ),
+            tl_ctrls=TopLevelControls(
+                category_entry=self._category_entry,
+                category_load_button=self._load_btn,
+                batch_load_button=self._batch_btn,
+                queue_open_button=self._queue_btn
+            ),
+            login_ctrls=LoginControls(
+                login_label=self._login_label,
+                login_button=self._login_button
+            ),
+            int_areas=InteractableAreas(
+                content_container=self._content_container,
+                navigation_container=self._navigation_container
             )
+        )
 
-        self._water_bottle = WaterBottle(deps, editor_ui)
+        self._state_controller = AppStateController(deps, editor_widgets)
 
-    def set_loading_indicator(self, is_spinner_enable: bool, label_text: str | None = None):
-        self._async_spinner.set_visible(is_spinner_enable)
-        if (label_text):
-            self._async_label.set_visible(True)
-            self._async_label.set_text(label_text)
-        else:
-            self._async_label.set_visible(False)
+    def _append_to_buffer(self, append_text: str):
+        insert_mark = self._wikitext_buffer.get_insert()
+        insert_iter = self._wikitext_buffer.get_iter_at_mark(insert_mark)
+        self._wikitext_buffer.insert(insert_iter, append_text)
 
-    def set_nav_buttons(self, prev_on: bool, next_on: bool):
-        self._previous_btn.set_sensitive(prev_on)
-        self._next_btn.set_sensitive(next_on)
-
-    def _update_move_btns(self):
-        if (self._queue_manager is None):
+    def _dispatch(self, msg: Msg):
+        if isinstance(msg, AutofillBody):
+            self._append_to_buffer(msg.append_text)
             return
 
-        canPrev = self._queue_manager.can_prev()
-        canNext = self._queue_manager.can_next()
-
-        _ = GLib.idle_add(self.set_nav_buttons, canPrev, canNext)
+        new = self._state_controller.reduce(msg)
+        _ = GLib.idle_add(self._state_controller.render, new)
 
     def _hydrate_current(self):
         if (self._queue_manager is None):
             return
 
-        self._update_move_btns()
         data = self._queue_manager.current_page()
         if (data is not None):
-            _ = GLib.idle_add(self.set_staging_status, data.is_staged)
-            can_continue = self._queue_manager.mediawiki_data_service.can_continue_fu(data.original.title)
-            _ = GLib.idle_add(self._linked_load_button.set_sensitive, can_continue)
-            self._water_bottle.load_page(data, self._construct_link_list(data.linked_pages))
+            original_title = data.original.title
+            more_usage = self._queue_manager.mediawiki_data_service.can_continue_fu(original_title)
+            can_continue = self._queue_manager.mediawiki_data_service.can_continue_cat()
+            self._dispatch(HydrateCurrent(
+                can_prev=self._queue_manager.can_prev(),
+                can_next=self._queue_manager.can_next(),
+                title=data.title,
+                wikitext=data.wikitext,
+                image_url=data.image_path,
+                links=self._construct_link_list(data.linked_pages),
+                staged=data.is_staged,
+                renamed=original_title != data.title,
+                more_usage=more_usage,
+                more_batch=can_continue
+            ))
 
     async def _load_batch(self):
-        button = self._load_btn
         if (self._queue_manager is None):
-            _ = GLib.idle_add(button.set_sensitive, True)
+            self._dispatch(FailedBatchLoad("Queue manager does not exist!"))
             return
-
-        _ = GLib.idle_add(self.set_loading_indicator, True, "Fetching batch...")
+        self._dispatch(StartAsync("Fetching batch..."))
         complete = await self._queue_manager.get_batch()
 
+        # TODO: distinguish incomplete batch from completed
         if (not complete):
-            _ = GLib.idle_add(self.set_loading_indicator, False, "Batch incomplete! Limit hit!")
-        else:
-            _ = GLib.idle_add(self.set_loading_indicator, False)
+            pass
         
-        can_continue = self._queue_manager.mediawiki_data_service.can_continue_cat()
-        _ = GLib.idle_add(self._batch_btn.set_sensitive, can_continue)
         self._hydrate_current()
 
     async def _setup_category(self, category: str):
         def create_query_manager(category: str):
-            isStart = self._queue_manager is None
+            is_start = self._queue_manager is None
             mediawiki_data_service: MediaWikiDataService = MediaWikiDataService(self._deps.http_client, category)
             modification_tracker: ModificationTracker = ModificationTracker(mediawiki_data_service.get_page)
             self._queue_manager = QueueManager(mediawiki_data_service, modification_tracker)
 
-            if (isStart):
-                def desensitize():
-                    self._content_container.set_sensitive(True)
-                    self._navigation_container.set_sensitive(True)
-                _ = GLib.idle_add(desensitize)
+            if (is_start):
+                self._dispatch(Thaw())
 
         is_category_valid = await self._deps.http_client.check_category_valid(category)
 
@@ -141,36 +185,27 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
             create_query_manager(category)
             await self._load_batch()
         else:
-            def set_error():
-                self._category_entry.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY, "dialog-warning-symbolic")
-                self._category_entry.get_style_context().add_class("error")
-            _ = GLib.idle_add(set_error)
+            self._dispatch(CategoryUpdated(False))
 
     async def _on_login_clicked(self):
+        is_logged_in = self._deps.http_client.is_logged_in()
+        self._dispatch(StartAsync("Logging in..." if not is_logged_in
+                        else "Logging out..."))
 
-        def login(user: str):
-            loginString = f"Logged in as <b>{user}</b>"
-            self._login_label.set_label(loginString)
-            self._login_label.show()
-            self._login_button.set_label("Logout")
-        def logout():
-            self._login_label.hide()
-            self._login_button.set_label("Login")
-
-        if (not self._deps.http_client.is_logged_in()):
-            _ = GLib.idle_add(self.set_loading_indicator, True, "Logging in...")
+        if (not is_logged_in):
             config = self._deps.app_config.config
             user_info = await self._deps.http_client.login(config.bot_username, config.bot_password)
             if (user_info is not None):
-                _ = GLib.idle_add(login, user_info.name)
+                self._dispatch(LoginOK(user_info.name))
+            else:
+                self._dispatch(AuthError("Failed to login."))
         else:
-            _ = GLib.idle_add(self.set_loading_indicator, True, "Logging out...")
             success = await self._deps.http_client.logout()
             if (success):
-                _ = GLib.idle_add(logout)
+                self._dispatch(LogoutOK())
+            else:
+                self._dispatch(AuthError("Failed to logout."))
         
-        _ = GLib.idle_add(self.set_loading_indicator, False)        
-
     def _construct_link_list(self, link_list: list[str]) -> list[SidebarLinkRow]:
         rows: list[SidebarLinkRow] = []
 
@@ -185,14 +220,13 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
             suffix = title_pieces.pop()
             suffix = suffix.lower()
             file_title = f'File:{new_title.strip()}.{suffix}'
-            self._should_rename.set_active(True)
-            self._page_title_entry.set_text(file_title)
+
+            self._dispatch(AutofillRename(file_title))
 
         def paste_link(_: SidebarLinkRow, link_title: str):
             link_text = f'[[{link_title}]]'
-            insert_mark = self._wikitext_buffer.get_insert()
-            insert_iter = self._wikitext_buffer.get_iter_at_mark(insert_mark)
-            self._wikitext_buffer.insert(insert_iter, link_text)
+
+            self._dispatch(AutofillBody(link_text))
 
         for title in link_list:
             sanitizedTitle = quote(title)
@@ -208,11 +242,11 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback(name="on_category_changed")
     def on_category_changed(self, field: Gtk.Entry):
         text = field.get_text()
-        self._load_btn.set_sensitive(bool(text.strip()))
-        def clear_error():
-            self._category_entry.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY, "text-editor-symbolic")
-            self._category_entry.get_style_context().remove_class("error")
-        _ = GLib.idle_add(clear_error)
+        not_empty = bool(text.strip())
+        if (not_empty):
+            self._dispatch(CategoryUpdated(True))
+        else:
+            self._dispatch(CategoryUpdated(False))
 
     @Gtk.Template.Callback(name="on_load_clicked")
     def on_load_clicked(self, _: Gtk.Button):
@@ -280,7 +314,6 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
         self._queue_manager.modification_tracker.set_altered_body(original_title, text)
 
     async def _linked_load(self):
-        _ = GLib.idle_add(self.set_loading_indicator, True, "Loading file usages...")
         if (self._queue_manager is None):
             return
         current_page = self._queue_manager.current_page()
@@ -288,21 +321,19 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
             return
         original_title = current_page.original.title
 
+        self._dispatch(StartAsync("Loading file usages..."))
         result = await self._queue_manager.mediawiki_data_service.batch_file_usage(original_title)
 
         if (result is not None):
-            self._water_bottle.load_page(current_page, self._construct_link_list(result.pages))
-
-        can_continue = self._queue_manager.mediawiki_data_service.can_continue_fu(original_title)
-        _ = GLib.idle_add(self._linked_load_button.set_sensitive, can_continue)
-        _ = GLib.idle_add(self.set_loading_indicator, False)
+            self._hydrate_current()
+        else:
+            self._dispatch(EndAsync())
 
     @Gtk.Template.Callback(name="on_linked_load_clicked")
     def on_linked_load_clicked(self, _btn: Gtk.Button):
         def async_trigger():
             _ = self._deps.event_loop.create_task(self._linked_load())
         __ = self._deps.event_loop.call_soon_threadsafe(async_trigger)
-
 
     @Gtk.Template.Callback(name="on_prev_clicked")
     def on_prev_clicked(self, _: Gtk.Button):
@@ -320,20 +351,6 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
         self._queue_manager.next()
         self._hydrate_current()
 
-    def set_staging_status(self, mark_as_staged: bool):
-        if (mark_as_staged):
-            self._confirm_btn.add_css_class('flat')
-            self._confirm_btn.remove_css_class("suggested-action")
-            self._confirm_btn.set_label("Unstage")
-
-            self._content_container.set_sensitive(False)
-        else:
-            self._confirm_btn.add_css_class('suggested-action')
-            self._confirm_btn.remove_css_class("flat")
-            self._confirm_btn.set_label("Stage")
-
-            self._content_container.set_sensitive(True)
-
     @Gtk.Template.Callback(name="on_confirm_clicked")
     def on_confirm_clicked(self, _btn: Gtk.Button):
         if (self._queue_manager is None):
@@ -346,7 +363,7 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
 
         if (current_page.is_staged):
             self._queue_manager.set_entry_staged(original_title, False)
-            self.set_staging_status(False)
+            self._dispatch(StagingUpdated(False))
         else:
             modified_title = current_page.title
             modified_text = current_page.wikitext
@@ -360,7 +377,7 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
                 if (self._queue_manager is None):
                     return
                 self._queue_manager.set_entry_staged(original_title)
-                self.set_staging_status(True)
+                self._dispatch(StagingUpdated(True))
 
             dialog = StagingDialog(self, original_title, original_text, modified_title, modified_text)
             _ = dialog.connect('confirmed', stage_content)
