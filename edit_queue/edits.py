@@ -12,11 +12,12 @@ class EntryMod:
         return self.title is None and self.wikitext is None
 
 class ModificationTracker:
-    modifications: dict[str, EntryMod] = {}
+    modifications: dict[str, EntryMod]
     page_source: Callable[[str], DataPage | None]
 
     def __init__(self, page_source: Callable[[str], DataPage | None]):
         self.page_source = page_source
+        self.modifications = {}
 
     def revert_changes(self, target_title: str):
         _ = self.modifications.pop(target_title, None)

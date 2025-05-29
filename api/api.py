@@ -27,11 +27,13 @@ PARAMS = {
 
 class FileUsageBatcher:
     _http_client: MediaWikiClient
-    _conts: dict[str, Cont | None] = {}
-    _complete: set[str] = set()
+    _conts: dict[str, Cont | None]
+    _complete: set[str]
 
     def __init__(self, http_client: MediaWikiClient):
         self._http_client = http_client
+        self._conts = {}
+        self._complete = set()
 
     def can_continue(self, title: str):
         if (title in self._conts):
@@ -200,13 +202,14 @@ class CategoryBatcher:
         )
 
 class MediaWikiDataService:
-    pages: dict[str, DataPage] = {}
+    pages: dict[str, DataPage]
     _cat: CategoryBatcher
     _fusage: FileUsageBatcher
 
     def __init__(self, http_client: MediaWikiClient, category: str):
         self._cat = CategoryBatcher(http_client, category)
         self._fusage = FileUsageBatcher(http_client)
+        self.pages = {}
 
     def _merge_pages(self, pages: list[DataPage]) -> list[DataPage]:
         compiled_batch: list[DataPage] = []

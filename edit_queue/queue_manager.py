@@ -16,15 +16,20 @@ class PresentationData:
 class QueueManager:
     mediawiki_data_service: MediaWikiDataService
     modification_tracker: ModificationTracker
-    submit_list: set[str] = set()
-    staged_list: set[str] = set()
-    seen_list: set[str] = set()
-    queue_list: list[str] = []
+    submit_list: set[str]
+    staged_list: set[str]
+    seen_list: set[str]
+    queue_list: list[str]
     queue_position: int | None = None
 
     def __init__(self, mediawiki_data_service: MediaWikiDataService, modification_tracker: ModificationTracker):
         self.mediawiki_data_service = mediawiki_data_service
         self.modification_tracker = modification_tracker
+
+        self.submit_list = set()
+        self.staged_list = set()
+        self.seen_list = set()
+        self.queue_list = list()
 
     def _append_unique(self, pages: list[str]):
         for page in pages:

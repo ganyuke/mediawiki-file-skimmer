@@ -18,11 +18,12 @@ class AppStateController:
     _int_areas: InteractableAreas
 
     _deps: AppDeps
-    _image_cache: dict[str, GdkPixbuf.Pixbuf] = {}
+    _image_cache: dict[str, GdkPixbuf.Pixbuf]
 
     def __init__(self, deps: AppDeps, editor_widgets: EditorWidgets):
         self._state = AppState()
         self._deps = deps
+        self._image_cache = {}
 
         self._async_ind = editor_widgets.async_ind
         self._editor_ui = editor_widgets.editor_ui
