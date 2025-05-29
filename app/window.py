@@ -26,6 +26,8 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
     _queue_btn: Gtk.Button = Gtk.Template.Child(name="queue_button")
     _should_rename: Gtk.CheckButton = Gtk.Template.Child(name="should_rename")
 
+    _linked_load_button: Gtk.Button = Gtk.Template.Child(name="linked_load_button")
+
     # hydration targets
     _image_preview: Gtk.Picture = Gtk.Template.Child(name="image_preview")
     _page_title_entry: Gtk.Entry = Gtk.Template.Child(name="page_title")
@@ -98,6 +100,8 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
         data = self._queue_manager.current_page()
         if (data is not None):
             _ = GLib.idle_add(self.set_staging_status, data.is_staged)
+            can_continue = self._queue_manager.mediawiki_data_service.can_continue_fu(data.original.title)
+            _ = GLib.idle_add(self._linked_load_button.set_sensitive, can_continue)
             self._water_bottle.load_page(data, self._construct_link_list(data.linked_pages))
 
     async def _load_batch(self):
@@ -219,7 +223,6 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
             _ = self._deps.event_loop.create_task(self._setup_category(category))
         __ = self._deps.event_loop.call_soon_threadsafe(async_trigger)
 
-
     @Gtk.Template.Callback(name="on_load_batch_clicked")
     def on_load_batch_clicked(self, button: Gtk.Button):
         button.set_sensitive(False)
@@ -275,6 +278,31 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
         end = buffer.get_end_iter()
         text = buffer.get_text(start, end, include_hidden_chars=True)
         self._queue_manager.modification_tracker.set_altered_body(original_title, text)
+
+    async def _linked_load(self):
+        _ = GLib.idle_add(self.set_loading_indicator, True, "Loading file usages...")
+        if (self._queue_manager is None):
+            return
+        current_page = self._queue_manager.current_page()
+        if (current_page is None):
+            return
+        original_title = current_page.original.title
+
+        result = await self._queue_manager.mediawiki_data_service.batch_file_usage(original_title)
+
+        if (result is not None):
+            self._water_bottle.load_page(current_page, self._construct_link_list(result.pages))
+
+        can_continue = self._queue_manager.mediawiki_data_service.can_continue_fu(original_title)
+        _ = GLib.idle_add(self._linked_load_button.set_sensitive, can_continue)
+        _ = GLib.idle_add(self.set_loading_indicator, False)
+
+    @Gtk.Template.Callback(name="on_linked_load_clicked")
+    def on_linked_load_clicked(self, _btn: Gtk.Button):
+        def async_trigger():
+            _ = self._deps.event_loop.create_task(self._linked_load())
+        __ = self._deps.event_loop.call_soon_threadsafe(async_trigger)
+
 
     @Gtk.Template.Callback(name="on_prev_clicked")
     def on_prev_clicked(self, _: Gtk.Button):

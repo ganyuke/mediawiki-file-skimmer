@@ -31,14 +31,17 @@ def log_to_file(entry: str):
 
 class FileUsageBatcher:
     _http_client: MediaWikiClient
-    _conts: dict[str, Cont] = {}
+    _conts: dict[str, Cont | None] = {}
     _complete: set[str] = set()
 
     def __init__(self, http_client: MediaWikiClient):
         self._http_client = http_client
 
     def can_continue(self, title: str):
-        return self._conts.get(title) is not None
+        if (title in self._conts):
+            return self._conts.get(title) is not None
+        else:
+            return True # for cold-start batches
 
     async def fetch_usage(self, title: str, limit: int = 50) -> BatchResult[str] | None:
         if (title in self._complete):
@@ -73,8 +76,7 @@ class FileUsageBatcher:
             mw_resp = MediaWikiResponse.model_validate_json(resp.text)
             batch_complete = mw_resp.batchcomplete is True
             cont = mw_resp.cont
-            if (cont is not None):
-                self._conts[title] = cont
+            self._conts[title] = cont
 
             for page in mw_resp.query.pages:
                 fusage = page.fileusage

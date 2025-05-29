@@ -52,6 +52,7 @@
                 <property name="icon-name">folder-download-symbolic</property>
                 <property name="label">Load ⟲</property>
                 <property name="sensitive">False</property>
+                <property name="tooltip-text">Load pages from category</property>
                 <signal name="clicked" handler="on_load_clicked"/>
               </object>
             </child>
@@ -60,6 +61,7 @@
                 <property name="icon-name">folder-download-symbolic</property>
                 <property name="label">Next batch</property>
                 <property name="sensitive">False</property>
+                <property name="tooltip-text">Load next batch of pages from category</property>
                 <signal name="clicked" handler="on_load_batch_clicked"/>
               </object>
             </child>
@@ -86,6 +88,7 @@
                   <object class="GtkButton" id="login_button">
                     <property name="icon-name">view-list-symbolic</property>
                     <property name="label">Login</property>
+                    <property name="tooltip-text">Login to MediaWiki account</property>
                     <signal name="clicked" handler="on_login_clicked"/>
                   </object>
                 </child>
@@ -177,6 +180,7 @@
                         <child>
                           <object class="GtkCheckButton" id="should_rename">
                             <property name="label">Rename</property>
+                            <property name="tooltip-text">Enable page move</property>
                             <signal name="toggled" handler="on_rename_toggled"/>
                           </object>
                         </child>
@@ -206,10 +210,23 @@
                 <property name="orientation">vertical</property>
                 <property name="spacing">12</property>
                 <child>
-                  <object class="GtkLabel">
-                    <property name="css-classes">heading</property>
-                    <property name="label">Linked pages</property>
-                    <property name="xalign">0</property>
+                  <object class="GtkBox">
+                    <property name="spacing">12</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="css-classes">heading</property>
+                        <property name="label">Linked pages</property>
+                        <property name="xalign">0</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="linked_load_button">
+                        <property name="icon-name">folder-download-symbolic</property>
+                        <property name="label">Load linked pages</property>
+                        <property name="tooltip-text">Fetch linked pages</property>
+                        <signal name="clicked" handler="on_linked_load_clicked"/>
+                      </object>
+                    </child>
                   </object>
                 </child>
                 <child>
@@ -234,12 +251,14 @@
             <child>
               <object class="GtkButton" id="previous_page">
                 <property name="label">Previous</property>
+                <property name="tooltip-text">Move backward in queue</property>
                 <signal name="clicked" handler="on_prev_clicked"/>
               </object>
             </child>
             <child>
               <object class="GtkButton" id="next_page">
                 <property name="label">Next</property>
+                <property name="tooltip-text">Move forward in queue</property>
                 <signal name="clicked" handler="on_next_clicked"/>
               </object>
             </child>
@@ -247,6 +266,7 @@
               <object class="GtkButton" id="confirm_page">
                 <property name="css-classes">suggested-action</property>
                 <property name="label">Stage</property>
+                <property name="tooltip-text">Stage changes for publishing</property>
                 <signal name="clicked" handler="on_confirm_clicked"/>
               </object>
             </child>
@@ -254,6 +274,7 @@
               <object class="GtkButton" id="publish_pages">
                 <property name="css-classes">destructive-action</property>
                 <property name="label">Publish changes</property>
+                <property name="tooltip-text">Publish changes to MediaWiki remote</property>
                 <signal name="clicked" handler="on_publish_clicked"/>
               </object>
             </child>

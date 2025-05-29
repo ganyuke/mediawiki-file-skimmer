@@ -1,5 +1,4 @@
-from pydantic import Field
-from pydantic.dataclasses import dataclass
+from dataclasses import dataclass, field
 from api.api import MediaWikiDataService
 from api.databags import DataPage
 from edit_queue.edits import EntryMod, ModificationTracker
@@ -10,7 +9,7 @@ class PresentationData:
     original: DataPage
     wikitext: str = ""
     image_path: str = ""
-    linked_pages: list[str] = Field(default_factory=list)
+    linked_pages: list[str] = field(default_factory=list)
     is_staged: bool = False
     is_submitted: bool = False
 
