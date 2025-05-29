@@ -68,7 +68,7 @@ class Thaw:
 class FailedBatchLoad:
     reason: str
 
-@dataclass
+@dataclass(frozen=True)
 class StagingUpdated:
     status: bool
 

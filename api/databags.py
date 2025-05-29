@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar
+from typing import Generic, Literal, TypeVar
 from pydantic import BaseModel, Field
 from pydantic.dataclasses import dataclass
 
@@ -144,3 +144,47 @@ class UserInfoResponse(BaseModel):
 
 #https://en.wikipedia.org/w/api.php?action=login&format=json
 #https://en.wikipedia.org/w/api.php?action=query&format=json&meta=tokens&type=login
+
+# ---------- #
+# PAGE EDITS #
+# ---------- #
+class EditSuccess(BaseModel):
+    result: Literal["Success"]
+    pageid: int
+    title: str
+    contentmodel: str
+    oldrevid: int
+    newrevid: int
+    newtimestamp: str
+
+
+class EditResponse(BaseModel):
+    edit: EditSuccess
+
+# ---------- #
+# PAGE MOVES #
+# ---------- #
+
+class MoveSuccess(BaseModel):
+    from_: str = Field(alias="from")
+    to: str
+    reason: str | None = None
+    redirectcreated: bool | None = None
+    talkfrom: str | None = None
+    talkto: str | None = None
+    logid: int | None = None
+
+class MoveResponse(BaseModel):
+    move: MoveSuccess
+
+# ---------- #
+# ERROR RESP #
+# ---------- #
+class ErrorInfo(BaseModel):
+    code: str
+    info: str
+    details: str | None = None
+    star: str | None = Field(None, alias="*")
+
+class ErrorResponse(BaseModel):
+    error: ErrorInfo

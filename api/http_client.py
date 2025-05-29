@@ -1,6 +1,6 @@
 import httpx
 from pydantic import ValidationError
-from api.databags import CategoryResp, CsrfTokenResponse, LoginResponse, TokenResponse, UserInfo, UserInfoResponse
+from api.databags import CategoryResp, CsrfTokenResponse, EditResponse, ErrorResponse, LoginResponse, MoveResponse, TokenResponse, UserInfo, UserInfoResponse
 from logger import log_to_file
 from version import __user_agent__
 
@@ -31,9 +31,13 @@ class MediaWikiClient:
         "format": "json",
     }
 
-    def __init__(self, api_url: str) -> None:
+    _debug_mode: bool = False
+    _debug_prefix: str = ""
+
+    def __init__(self, api_url: str, debug_mode: bool = False) -> None:
         self._api_url = api_url
         self.client = httpx.AsyncClient(base_url=api_url, headers=self.HEADERS)
+        self._debug_mode = debug_mode
 
     async def get_csrf_token(self) -> str | None:
 
@@ -76,6 +80,9 @@ class MediaWikiClient:
 
                 user_info = UserInfo(id=login_info.lguserid, name=login_info.lgusername)
                 self._user_info = user_info
+                # debug mode
+                if (self._debug_mode):
+                    self._debug_prefix = f"User:{user_info.name}"
                 return user_info
             except (ValidationError) as e:
                 print(e)
@@ -100,13 +107,13 @@ class MediaWikiClient:
             "format": "json"
         }
 
-        resp = await self.post(data=payload) # response is probably going to be '{}'
         try:
+            resp = await self.post(data=payload) # response is probably going to be '{}'
             _ = resp.raise_for_status()
             self._user_info = None # eh, I'm sure they're logged out, right?
             return True
         except (httpx.HTTPError):
-            log_str = f"Failed to logout with code {resp.status_code}."
+            log_str = f"Failed to logout."
             log_to_file(log_str)
             print(log_str)
             return False
@@ -142,7 +149,86 @@ class MediaWikiClient:
         except (ValidationError):
             pass
         return False
-        
+
+    async def publish_rename(self, title: str, new_title: str, reason: str) -> bool:
+        if (not self.is_logged_in()):
+            raise RuntimeError("Tried to pagemove while not logged in!")
+
+        token= await self.get_csrf_token()
+        if (token is None):
+            raise RuntimeError("Failed to get CSRF token for pagemove!")
+
+        move_param = {
+            "action": "move",
+            "from":  self._debug_prefix + title,
+            "to": self._debug_prefix + new_title,
+            "reason": reason,
+            "movetalk": True,
+            "movesubpages": True,
+            "noredirect": False,
+            "token": token,
+            "format": "json",
+        }
+
+        try:
+            resp = await self.client.post(url=self._api_url, data=move_param)
+            _ = resp.raise_for_status()
+            data = resp.text
+            try:
+                _result = MoveResponse.model_validate_json(data)
+                return True
+            except ValidationError:
+                try:
+                    _error = ErrorResponse.model_validate(data)
+                    return False
+                except ValidationError:
+                    return False
+        except (httpx.HTTPError):
+            log_str = f"Failed to move page."
+            log_to_file(log_str)
+            print(log_str)
+
+        return False
+
+    async def publish_edit(self, title: str, new_text: str, summary: str) -> bool:
+        if (not self.is_logged_in()):
+            raise RuntimeError("Tried to edit while not logged in!")
+
+        token= await self.get_csrf_token()
+        if (token is None):
+            raise RuntimeError("Failed to get CSRF token for edit!")
+
+        edit_param = {
+            "action": "edit",
+            "title": self._debug_prefix + title,
+            "text": new_text,
+            "summary": summary,
+            "minor": True,
+            "bot": True,
+            "token": token,
+            "format": "json",
+        }
+
+        try:
+            resp = await self.client.post(url=self._api_url, data=edit_param)
+            _ = resp.raise_for_status()
+            data = resp.text
+            try:
+                _result = EditResponse.model_validate_json(data)
+                return True
+            except ValidationError:
+                try:
+                    _error = ErrorResponse.model_validate(data)
+                    return False
+                except ValidationError:
+                    return False
+        except (httpx.HTTPError):
+            log_str = f"Failed to POST edit."
+            log_to_file(log_str)
+            print(log_str)
+
+        return False
+
     async def get(self, params: dict[str, str] | None, override_url: str | None = None) -> httpx.Response:
         url = override_url or self._api_url
 

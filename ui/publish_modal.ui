@@ -12,16 +12,17 @@
         <property name="css-classes">dialog-content</property>
         <property name="orientation">vertical</property>
         <property name="spacing">12</property>
+        <property name="width-request">400</property>
         <child>
           <object class="GtkBox">
             <property name="orientation">vertical</property>
-            <property name="spacing">6</property>
+            <property name="spacing">12</property>
             <child>
               <object class="GtkBox" id="publish-review-panel">
                 <property name="css-classes">heading</property>
                 <property name="halign">baseline</property>
                 <property name="orientation">vertical</property>
-                <property name="spacing">6</property>
+                <property name="spacing">8</property>
                 <property name="vexpand">True</property>
                 <child>
                   <object class="GtkLabel">
@@ -30,8 +31,54 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkListBox">
+                  <object class="GtkListBox" id="publish-review-listbox">
                     <property name="vexpand">True</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSeparator"/>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">12</property>
+                <child>
+                  <object class="GtkBox" id="edit-reason-container">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">8</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="css-classes">heading</property>
+                        <property name="halign">start</property>
+                        <property name="label">Edit summary</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkEntry" id="edit-reason-entry">
+                        <property name="placeholder-text">Truth does not do as much good in the world as the appearance of truth does evil.</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox" id="move-reason-container">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">8</property>
+                    <property name="visible">False</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="css-classes">heading</property>
+                        <property name="halign">start</property>
+                        <property name="label">Move reason</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkEntry" id="move-reason-entry">
+                        <property name="placeholder-text">The prickly prick that'll bury us all...</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>

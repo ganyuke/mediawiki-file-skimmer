@@ -45,3 +45,10 @@ class AppConfig:
 
     def get_api_url(self):
         return self.config.base_url + self.config.api_path
+
+    def get_username(self):
+        bot_username = self.config.bot_username
+        return bot_username.split("@")[0] if "@" in bot_username else bot_username
+
+    def get_user_page(self):
+        return f"User:{self.get_username()}"
