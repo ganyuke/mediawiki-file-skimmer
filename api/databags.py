@@ -1,4 +1,32 @@
+from typing import Generic, TypeVar
 from pydantic import BaseModel, Field
+from pydantic.dataclasses import dataclass
+
+T = TypeVar('T')
+
+# -------------- #
+# TRANSPORT BAGS #
+# -------------- #
+@dataclass
+class DataPage:
+    title: str
+    wikitext: str
+    image_path: str
+    linked_pages: set[str] = Field(default_factory=set) # ehh, let the frontend figure it out the order
+
+    def merge(self, other: "DataPage"):
+        if (self.title == ""):
+            self.title = other.title
+        if (self.wikitext == ""):
+            self.wikitext = other.wikitext
+        if (self.image_path == ""):
+            self.image_path = other.image_path
+        self.linked_pages.update(other.linked_pages)
+
+@dataclass(frozen=True)
+class BatchResult(Generic[T]):
+    pages: list[T]
+    complete: bool
 
 # ------------- #
 # BATCH FETCHER #

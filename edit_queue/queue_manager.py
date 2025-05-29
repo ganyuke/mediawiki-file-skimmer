@@ -1,6 +1,7 @@
 from pydantic import Field
 from pydantic.dataclasses import dataclass
-from api.api import CategoryBatcher, DataPage, FileUsageBatcher
+from api.api import MediaWikiDataService
+from api.databags import DataPage
 from edit_queue.edits import EntryMod, ModificationTracker
 
 @dataclass(frozen=True)
@@ -14,8 +15,7 @@ class PresentationData:
     is_submitted: bool = False
 
 class QueueManager:
-    category_batcher: CategoryBatcher
-    fileusage_batcher: FileUsageBatcher
+    mediawiki_data_service: MediaWikiDataService
     modification_tracker: ModificationTracker
     submit_list: set[str] = set()
     staged_list: set[str] = set()
@@ -23,10 +23,9 @@ class QueueManager:
     queue_list: list[str] = []
     queue_position: int | None = None
 
-    def __init__(self, category_batcher: CategoryBatcher, fileusage_batcher: FileUsageBatcher, modification_tracker: ModificationTracker):
-        self.category_batcher = category_batcher
+    def __init__(self, mediawiki_data_service: MediaWikiDataService, modification_tracker: ModificationTracker):
+        self.mediawiki_data_service = mediawiki_data_service
         self.modification_tracker = modification_tracker
-        self.fileusage_batcher = fileusage_batcher
 
     def _append_unique(self, pages: list[str]):
         for page in pages:
@@ -34,18 +33,8 @@ class QueueManager:
                 self.queue_list.append(page)
                 self.seen_list.add(page)
 
-    async def _get_next_batch(self) -> bool:
-        result = await self.category_batcher.fetch_batch()
-
-        self._append_unique(result.pages)
-
-        if (self.queue_position is None and len(self.queue_list) > 0):
-            self.queue_position = 0
-        
-        return result.complete
-
     def _merge_pages(self, title: str) -> PresentationData:
-        original_data = self.category_batcher.pages.get(title)
+        original_data = self.mediawiki_data_service.get_page(title)
         if (original_data is None):
             raise RuntimeError("Queue found non-existent page.")
 
@@ -77,9 +66,6 @@ class QueueManager:
             return True
         return False
 
-    def can_fetch_more(self) -> bool:
-        return self.category_batcher.canContinue()
-
     def prev(self) :
         if (self.queue_position is not None and self.can_prev()):
             self.queue_position -= 1
@@ -95,7 +81,14 @@ class QueueManager:
         return True
 
     async def get_batch(self):
-        return await self._get_next_batch()
+        result = await self.mediawiki_data_service.batch_category()
+        title_list = [page.title for page in result.pages]
+        self._append_unique(title_list)
+
+        if (self.queue_position is None and len(self.queue_list) > 0):
+            self.queue_position = 0
+
+        return result.complete
 
     def set_entry_staged(self, target_title: str, mark_as_staged: bool = True):
         if (mark_as_staged):

@@ -1,6 +1,7 @@
-from typing import Literal
+from typing import Callable, Literal
 from pydantic.dataclasses import dataclass
-from api.api import DataPage
+
+from api.databags import DataPage
 
 @dataclass
 class EntryMod:
@@ -11,18 +12,17 @@ class EntryMod:
         return self.title is None and self.wikitext is None
 
 class ModificationTracker:
-    modifications: dict[str, EntryMod]
-    _original_list: dict[str, DataPage]
+    modifications: dict[str, EntryMod] = {}
+    page_source: Callable[[str], DataPage | None]
 
-    def __init__(self, original_list: dict[str, DataPage]):
-        self.modifications = {}
-        self._original_list = original_list
+    def __init__(self, page_source: Callable[[str], DataPage | None]):
+        self.page_source = page_source
 
     def revert_changes(self, target_title: str):
         _ = self.modifications.pop(target_title, None)
 
     def _set_field(self, target_title: str, target_field: Literal["title", "wikitext"], new_value: str | None):
-        originalData = self._original_list.get(target_title)
+        originalData = self.page_source(target_title)
         # If this is None, something crazy must have hapepned.
         if (originalData is None):
             raise RuntimeError(f"No original data for {target_title} — possible state desync (dequeued?)")

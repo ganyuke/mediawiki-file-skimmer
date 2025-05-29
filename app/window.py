@@ -6,7 +6,7 @@ from gi.repository import Gtk, GLib # pyright: ignore[reportMissingModuleSource]
 from app.staging_dialog import StagingDialog
 from urllib.parse import quote
 from app.link_row import SidebarLinkRow
-from api.api import CategoryBatcher, FileUsageBatcher
+from api.api import MediaWikiDataService
 from edit_queue.edits import ModificationTracker
 from edit_queue.queue_manager import QueueManager
 from app.databags import AppDeps
@@ -108,24 +108,22 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
 
         _ = GLib.idle_add(self.set_loading_indicator, True, "Fetching batch...")
         complete = await self._queue_manager.get_batch()
+
         if (not complete):
             _ = GLib.idle_add(self.set_loading_indicator, False, "Batch incomplete! Limit hit!")
         else:
             _ = GLib.idle_add(self.set_loading_indicator, False)
-        _ = GLib.idle_add(self._batch_btn.set_sensitive, self._queue_manager.can_fetch_more())
+        
+        can_continue = self._queue_manager.mediawiki_data_service.can_continue_cat()
+        _ = GLib.idle_add(self._batch_btn.set_sensitive, can_continue)
         self._hydrate_current()
 
     async def _setup_category(self, category: str):
         def create_query_manager(category: str):
             isStart = self._queue_manager is None
-
-            category_batcher: CategoryBatcher = CategoryBatcher(
-                category=category,
-                client=self._deps.http_client
-                )
-            fileusage_batcher: FileUsageBatcher = FileUsageBatcher(self._deps.http_client)
-            modification_tracker: ModificationTracker = ModificationTracker(category_batcher.pages)
-            self._queue_manager = QueueManager(category_batcher, fileusage_batcher, modification_tracker)
+            mediawiki_data_service: MediaWikiDataService = MediaWikiDataService(self._deps.http_client, category)
+            modification_tracker: ModificationTracker = ModificationTracker(mediawiki_data_service.get_page)
+            self._queue_manager = QueueManager(mediawiki_data_service, modification_tracker)
 
             if (isStart):
                 def desensitize():
