@@ -1,8 +1,8 @@
 from httpx import HTTPStatusError
 from pydantic import ValidationError
-
 from api.http_client import MediaWikiClient
 from api.databags import BatchResult, Cont, DataPage, MediaWikiResponse, Page
+from logger import log_to_file
 
 PARAMS = {
 	"action": "query",
@@ -24,10 +24,6 @@ PARAMS = {
 	"gcmsort": "sortkey",
 	"gcmdir": "ascending"
 }
-
-def log_to_file(entry: str):
-    with open("app.log", "a") as f:
-        _ = f.write(entry)
 
 class FileUsageBatcher:
     _http_client: MediaWikiClient

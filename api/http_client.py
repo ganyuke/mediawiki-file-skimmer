@@ -1,6 +1,7 @@
 import httpx
 from pydantic import ValidationError
 from api.databags import CategoryResp, CsrfTokenResponse, LoginResponse, TokenResponse, UserInfo, UserInfoResponse
+from logger import log_to_file
 from version import __user_agent__
 
 class MediaWikiClient:
@@ -84,10 +85,14 @@ class MediaWikiClient:
             self._user_info = None
             return None
 
-    async def logout(self):
+    async def logout(self) -> bool:
         csrftoken = await self.get_csrf_token()
         if (csrftoken is None):
-            raise RuntimeError("Failed to get CSRF token during logout.")
+            log_str = "Failed to get CSRF token during logout."
+            log_to_file(log_str)
+            print(log_str)
+            return False
+            #raise RuntimeError()
 
         payload = {
             "action": "logout",
@@ -95,8 +100,16 @@ class MediaWikiClient:
             "format": "json"
         }
 
-        _ = await self.post(data=payload) # response is probably going to be '{}'
-        self._user_info = None # eh, I'm sure they're logged out, right?
+        resp = await self.post(data=payload) # response is probably going to be '{}'
+        try:
+            _ = resp.raise_for_status()
+            self._user_info = None # eh, I'm sure they're logged out, right?
+            return True
+        except (httpx.HTTPError):
+            log_str = f"Failed to logout with code {resp.status_code}."
+            log_to_file(log_str)
+            print(log_str)
+            return False
 
     async def get_user_data(self) -> UserInfo | None:
         resp = await self.get({
