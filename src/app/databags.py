@@ -1,3 +1,4 @@
+from enum import Enum
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('GdkPixbuf', '2.0')
@@ -148,4 +149,45 @@ class EditorWidgets:
     tl_ctrls: TopLevelControls
     login_ctrls: LoginControls
     int_areas: InteractableAreas
-    
+
+@dataclass(frozen=True)
+class PublishPayload:
+    original_title: str
+    summary: str = ""
+    reason: str = ""
+    new_title: str | None = None
+    new_text: str | None = None
+
+class PublishStage(Enum):
+    EDIT = "edit"
+    MOVE = "move"
+    DONE = "done"
+
+# Publish modal icons
+@dataclass
+class StatusVisual:
+    icon: str
+    tooltip: str
+
+class StatusState(Enum):
+    OK = "ok"
+    FAIL = "fail"
+    SCHEDULED = "staged"
+    NOT_SCHEDULED = "not_scheduled"
+    ABORTED = "aborted"
+    INCOMPLETE = "incomplete"
+    IN_PROGRESS = "in_progress"
+    INVALID = "invalid"
+    DELAYED = "delayed"
+
+STATUS_ICONS: dict[StatusState, StatusVisual] = {
+    StatusState.OK: StatusVisual("emblem-ok-symbolic", "Operation completed."),
+    StatusState.FAIL: StatusVisual("dialog-error-symbolic", "Operation failed."),
+    StatusState.SCHEDULED: StatusVisual("content-loading-symbolic", "Operation scheduled."),
+    StatusState.NOT_SCHEDULED: StatusVisual("changes-prevent-symbolic", "Operation not scheduled."),
+    StatusState.ABORTED: StatusVisual("face-crying-symbolic", "Operation cancelled."),
+    StatusState.INCOMPLETE: StatusVisual("dialog-warning-symbolic", "Operation partially completed."),
+    StatusState.IN_PROGRESS: StatusVisual("", "Operation in progress."),
+    StatusState.INVALID: StatusVisual("dialog-warning-symbolic", "Operation skipped. No modifications were made."),
+    StatusState.DELAYED: StatusVisual("face-tired-symbolic", "Operation pausing to appease API.")
+}

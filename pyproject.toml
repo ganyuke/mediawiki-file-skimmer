@@ -1,0 +1,18 @@
+[project]
+name = "mediawiki-file-skimmer"
+version = "0.1.0"
+dependencies = [
+    "httpx>=0.28.0",
+    "pycairo>=1.28.0",
+    "pydantic>=2.11.0",
+    "PyGObject"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "PyGObject-stubs"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}

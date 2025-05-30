@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from typing import Generic, Literal, TypeVar
 from pydantic import BaseModel, Field
 from pydantic.dataclasses import dataclass
@@ -180,11 +181,30 @@ class MoveResponse(BaseModel):
 # ---------- #
 # ERROR RESP #
 # ---------- #
-class ErrorInfo(BaseModel):
+class ErrorResult(BaseModel):
     code: str
     info: str
     details: str | None = None
+
+class ErrorInfo(ErrorResult):
     star: str | None = Field(None, alias="*")
 
 class ErrorResponse(BaseModel):
     error: ErrorInfo
+
+class ResponseStatus(Enum):
+    OK = auto()
+    NOT_LOGGED_IN = auto()
+    NO_CSRF = auto()
+    HTTP_ERROR = auto()
+    PARSE_ERROR = auto()
+    API_ERROR = auto()
+    MAX_LIMIT_HIT = auto()
+    ABORTED = auto()
+
+@dataclass(frozen=True)
+class MediaWikiResult(Generic[T]):
+    status: ResponseStatus
+    data: T | None = None
+    error: ErrorResult | None = None
+    raw: str | None = None # something must have really gone wrong if the HTTP returned None

@@ -1,8 +1,17 @@
 import httpx
 from pydantic import ValidationError
-from api.databags import CategoryResp, CsrfTokenResponse, EditResponse, ErrorResponse, LoginResponse, MoveResponse, TokenResponse, UserInfo, UserInfoResponse
 from logger import log_to_file
 from version import __user_agent__
+from api.databags import (
+    CategoryResp,
+    CsrfTokenResponse,
+    LoginResponse,
+    MediaWikiResult,
+    ResponseStatus,
+    TokenResponse,
+    UserInfo,
+    UserInfoResponse
+)
 
 class MediaWikiClient:
     _api_url: str
@@ -39,15 +48,22 @@ class MediaWikiClient:
         self.client = httpx.AsyncClient(base_url=api_url, headers=self.HEADERS)
         self._debug_mode = debug_mode
 
-    async def get_csrf_token(self) -> str | None:
-
-        resp = await self.get(params=self.CSRF_TOKEN_PARAM)
+    async def get_csrf_token(self) -> MediaWikiResult[str]:
         try:
-            csrf_resp = CsrfTokenResponse.model_validate(resp.json())
-            csrftoken = csrf_resp.query.tokens.csrftoken
-            return csrftoken
-        except (ValidationError):
-            return None
+            resp = await self.get(params=self.CSRF_TOKEN_PARAM)
+            _ = resp.raise_for_status()
+            try:
+                csrf_resp = CsrfTokenResponse.model_validate_json(resp.text)
+                csrftoken = csrf_resp.query.tokens.csrftoken
+                
+                if (csrftoken == "+\\"): # not logged in users get this
+                    return MediaWikiResult(status=ResponseStatus.NOT_LOGGED_IN)
+                else:
+                    return MediaWikiResult(status=ResponseStatus.OK, data=csrftoken)
+            except (ValidationError):
+                return MediaWikiResult(status=ResponseStatus.PARSE_ERROR, raw=resp.text)
+        except (httpx.HTTPError):
+            return MediaWikiResult(status=ResponseStatus.HTTP_ERROR)
 
     async def login(self, username: str, password: str) -> UserInfo | None:
         try:
@@ -93,17 +109,13 @@ class MediaWikiClient:
             return None
 
     async def logout(self) -> bool:
-        csrftoken = await self.get_csrf_token()
-        if (csrftoken is None):
-            log_str = "Failed to get CSRF token during logout."
-            log_to_file(log_str)
-            print(log_str)
+        token_result = await self.get_csrf_token()
+        if (token_result.status is not ResponseStatus.OK or token_result.data is None):
             return False
-            #raise RuntimeError()
 
         payload = {
             "action": "logout",
-            "token": csrftoken,
+            "token": token_result.data,
             "format": "json"
         }
 
@@ -148,85 +160,6 @@ class MediaWikiClient:
                 return True
         except (ValidationError):
             pass
-        return False
-
-    async def publish_rename(self, title: str, new_title: str, reason: str) -> bool:
-        if (not self.is_logged_in()):
-            raise RuntimeError("Tried to pagemove while not logged in!")
-
-        token= await self.get_csrf_token()
-        if (token is None):
-            raise RuntimeError("Failed to get CSRF token for pagemove!")
-
-        move_param = {
-            "action": "move",
-            "from":  self._debug_prefix + title,
-            "to": self._debug_prefix + new_title,
-            "reason": reason,
-            "movetalk": True,
-            "movesubpages": True,
-            "noredirect": False,
-            "token": token,
-            "format": "json",
-        }
-
-        try:
-            resp = await self.client.post(url=self._api_url, data=move_param)
-            _ = resp.raise_for_status()
-            data = resp.text
-            try:
-                _result = MoveResponse.model_validate_json(data)
-                return True
-            except ValidationError:
-                try:
-                    _error = ErrorResponse.model_validate(data)
-                    return False
-                except ValidationError:
-                    return False
-        except (httpx.HTTPError):
-            log_str = f"Failed to move page."
-            log_to_file(log_str)
-            print(log_str)
-
-        return False
-
-    async def publish_edit(self, title: str, new_text: str, summary: str) -> bool:
-        if (not self.is_logged_in()):
-            raise RuntimeError("Tried to edit while not logged in!")
-
-        token= await self.get_csrf_token()
-        if (token is None):
-            raise RuntimeError("Failed to get CSRF token for edit!")
-
-        edit_param = {
-            "action": "edit",
-            "title": self._debug_prefix + title,
-            "text": new_text,
-            "summary": summary,
-            "minor": True,
-            "bot": True,
-            "token": token,
-            "format": "json",
-        }
-
-        try:
-            resp = await self.client.post(url=self._api_url, data=edit_param)
-            _ = resp.raise_for_status()
-            data = resp.text
-            try:
-                _result = EditResponse.model_validate_json(data)
-                return True
-            except ValidationError:
-                try:
-                    _error = ErrorResponse.model_validate(data)
-                    return False
-                except ValidationError:
-                    return False
-        except (httpx.HTTPError):
-            log_str = f"Failed to POST edit."
-            log_to_file(log_str)
-            print(log_str)
-
         return False
 
     async def get(self, params: dict[str, str] | None, override_url: str | None = None) -> httpx.Response:
