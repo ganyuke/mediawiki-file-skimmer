@@ -4,7 +4,31 @@ gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import GLib, GdkPixbuf, Gtk # pyright: ignore[reportMissingModuleSource]
 
 from dataclasses import replace
-from app.databags import AppDeps, AppState, AsyncIndicators, AuthError, AutofillBody, AutofillRename, FailedBatchLoad, HydrateCurrent, CategoryUpdated, EditorUi, EditorWidgets, EndAsync, InteractableAreas, LinkedPagesUi, LoginControls, LoginOK, LogoutOK, Msg, NavigationControls, StagingUpdated, StartAsync, Thaw, TopLevelControls
+from app.databags import (
+    AppDeps,
+    AppState,
+    AsyncIndicators,
+    AuthError,
+    AutofillBody,
+    AutofillRename,
+    FailedBatchLoad,
+    HydrateCurrent,
+    CategoryUpdated,
+    EditorUi,
+    EditorWidgets,
+    EndAsync,
+    InteractableAreas,
+    LinkedPagesUi,
+    LoginControls,
+    LoginOK,
+    LogoutOK,
+    Msg,
+    NavigationControls,
+    StagingUpdated,
+    StartAsync,
+    Thaw,
+    TopLevelControls
+)
 
 class AppStateController:
     _state: AppState
@@ -126,20 +150,18 @@ class AppStateController:
 
     def _set_staging_status(self, mark_as_staged: bool):
         stage_btn = self._nav_ctrls.stage_button
-        content_container = self._int_areas.content_container
 
         if (mark_as_staged):
             stage_btn.add_css_class('flat')
             stage_btn.remove_css_class("suggested-action")
             stage_btn.set_label("Unstage")
-
-            content_container.set_sensitive(False)
         else:
             stage_btn.add_css_class('suggested-action')
             stage_btn.remove_css_class("flat")
             stage_btn.set_label("Stage")
 
-            content_container.set_sensitive(True)
+        self._int_areas.right_edit_panel.set_sensitive(not mark_as_staged)
+        self._int_areas.file_entry_container.set_sensitive(not mark_as_staged)
 
     def render(self, new: AppState) -> None:
         old = self._state
@@ -166,6 +188,7 @@ class AppStateController:
         if old.logged_in_user != new.logged_in_user:
             login_button = self._login_ctrls.login_button
             login_label = self._login_ctrls.login_label
+            
             if new.logged_in_user:
                 login_label.set_label(
                     f"Logged in as <b>{new.logged_in_user}</b>")
@@ -174,6 +197,14 @@ class AppStateController:
             else:
                 login_label.hide()
                 login_button.set_label("Login")
+
+            logged_in = new.logged_in_user is not None
+            self._nav_ctrls.publish_button.set_sensitive(logged_in)
+            if (logged_in):
+                publish_tooltip = "Publish changes to MediaWiki remote"
+            else:
+                publish_tooltip = "Log in before publishing"
+            self._nav_ctrls.publish_button.set_tooltip_text(publish_tooltip)
 
         # STAGING
         if old.staged != new.staged:
@@ -223,9 +254,10 @@ class AppStateController:
 
         # LINKED PAGES PANEL
         # we constructed the rows in the main window for access to functions
-        if old.linked_pages != new.linked_pages:
+        if (old.linked_pages != new.linked_pages) or (old.staged != new.staged):
             self._linked_ui.links_list.remove_all()
             for row in new.linked_pages:
+                row.set_button_status(not new.staged)
                 self._linked_ui.links_list.append(row)
         if old.more_usage != new.more_usage:
             self._linked_ui.links_fetch_button.set_sensitive(new.more_usage)

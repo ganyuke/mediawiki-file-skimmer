@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from api.api import MediaWikiDataService
 from api.databags import DataPage
+from app.databags import ModificationPayload
 from edit_queue.edits import EntryMod, ModificationTracker
 
 @dataclass(frozen=True)
@@ -105,3 +106,17 @@ class QueueManager:
 
     def get_staged_pages(self) -> list[str]:
         return [title for title in self.queue_list if title in self.staged_list]
+
+    def get_staged_payloads(self) -> list[ModificationPayload]:
+        pages = self.get_staged_pages()
+        payloads: list[ModificationPayload] = []
+        for page in pages:
+            change = self.modification_tracker.modifications.get(page)
+            if (change is None):
+                continue # why is this even staged if there are no changes?
+            payloads.append(ModificationPayload(
+                original_title=page,
+                new_text=change.wikitext,
+                new_title=change.title
+            ))
+        return payloads

@@ -3,6 +3,8 @@ import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, GLib # pyright: ignore[reportMissingModuleSource]
 
+from app.publish_dialog import PublishDialog
+from edit_queue.publish_queue import UploadQueue
 from app.controller import AppStateController
 from app.staging_dialog import StagingDialog
 from urllib.parse import quote
@@ -29,6 +31,8 @@ from app.databags import (
     LogoutOK,
     Msg,
     NavigationControls,
+    PublishConfig,
+    PublishPayload,
     StagingUpdated,
     StartAsync,
     Thaw,
@@ -51,6 +55,8 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
 
     _linked_load_button: Gtk.Button = Gtk.Template.Child(name="linked_load_button")
     _publish_button: Gtk.Button = Gtk.Template.Child(name="publish_pages")
+    _right_edit_panel: Gtk.Box = Gtk.Template.Child(name="pane_right")
+    _file_entry_container: Gtk.Box = Gtk.Template.Child(name="file_entry_container")
 
     # hydration targets
     _image_preview: Gtk.Picture = Gtk.Template.Child(name="image_preview")
@@ -80,6 +86,8 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
     _queue_manager: QueueManager | None = None
     _deps: AppDeps
     _state_controller: AppStateController
+    _publish_dialog: PublishDialog | None = None
+    _publish_handler: UploadQueue | None = None
 
     def __init__(self, deps: AppDeps, **kwargs): # pyright: ignore[reportUnknownParameterType, reportMissingParameterType]
         self._deps = deps
@@ -115,7 +123,9 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
             ),
             int_areas=InteractableAreas(
                 content_container=self._content_container,
-                navigation_container=self._navigation_container
+                navigation_container=self._navigation_container,
+                right_edit_panel=self._right_edit_panel,
+                file_entry_container=self._file_entry_container
             )
         )
 
@@ -385,4 +395,32 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback(name="on_publish_clicked")
     def on_publish_clicked(self, _btn: Gtk.Button):
-        pass
+        if (self._queue_manager is None):
+            return
+
+        dialog = self._publish_dialog
+        if (dialog is None):
+            dialog = PublishDialog(self)
+            self._publish_dialog = dialog
+
+            publish_queue = self._publish_handler
+            if (publish_queue is None):
+                publish_queue = UploadQueue(deps=self._deps, ui_notifier=dialog.update_child)
+                self._publish_handler = publish_queue
+
+            payloads = self._queue_manager.get_staged_payloads()
+
+            def publish(config: PublishConfig):
+                if (self._queue_manager is None):
+                    return
+                publish_payload = PublishPayload(changes=payloads, config=config)
+                publish_queue.publish_all(publish_payload)
+
+            def abort():
+                publish_queue.abort()
+
+            _ = dialog.connect("confirmed", publish)
+            _ = dialog.connect("aborted", abort)
+
+        dialog.generate_children(self._queue_manager.get_staged_pages())
+        dialog.show()

@@ -3,40 +3,74 @@
 <interface>
   <!-- interface-name publish_modal_item.ui -->
   <requires lib="gtk" version="4.0"/>
-  <object class="GtkListBoxRow">
-    <child>
+  <template class="MediaWikiPublishRow" parent="GtkListBoxRow">
+    <property name="child">
       <object class="GtkBox">
         <property name="spacing">12</property>
         <child>
-          <object class="GtkLabel" id="publish-page-label">
-            <property name="label">new page</property>
+          <object class="GtkLabel" id="publish_page_label">
+            <property name="ellipsize">end</property>
+            <property name="label">File:Example.jpg</property>
+            <property name="width-request">100</property>
             <property name="wrap">True</property>
+            <property name="wrap-mode">char</property>
+            <property name="xalign">0.0</property>
           </object>
         </child>
         <child>
           <object class="GtkBox">
             <property name="halign">end</property>
             <property name="hexpand">True</property>
+            <property name="spacing">4</property>
+            <property name="width-request">130</property>
             <child>
-              <object class="GtkLabel" id="publish-status-label">
-                <property name="label">Uploading...</property>
+              <object class="GtkLabel" id="publish_status_label">
+                <property name="ellipsize">end</property>
+                <property name="hexpand">True</property>
+                <property name="label">Delayed (49s)</property>
+                <property name="tooltip-text">50 second delay</property>
+                <property name="xalign">0.0</property>
               </object>
             </child>
             <child>
-              <object class="GtkSpinner">
-                <property name="spinning">True</property>
-                <property name="visible">False</property>
+              <object class="GtkStack" id="edit_stack">
+                <property name="transition-type">over-right-left</property>
+                <child>
+                  <object class="GtkSpinner" id="edit_status_spinner">
+                    <property name="spinning">True</property>
+                    <property name="visible">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkImage" id="edit_status_icon">
+                    <property name="icon-name">emblem-ok-symbolic</property>
+                    <property name="tooltip-text">Operation ccomplete.</property>
+                    <property name="visible">False</property>
+                  </object>
+                </child>
               </object>
             </child>
             <child>
-              <object class="GtkImage" id="publish-checkmark-label">
-                <property name="icon-name">emblem-ok-symbolic</property>
-                <property name="visible">False</property>
+              <object class="GtkStack" id="move_stack">
+                <property name="transition-type">over-right-left</property>
+                <child>
+                  <object class="GtkSpinner" id="move_status_spinner">
+                    <property name="spinning">True</property>
+                    <property name="visible">False</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkImage" id="move_status_icon">
+                    <property name="icon-name">emblem-ok-symbolic</property>
+                    <property name="tooltip-text">Operation ccomplete.</property>
+                    <property name="visible">False</property>
+                  </object>
+                </child>
               </object>
             </child>
           </object>
         </child>
       </object>
-    </child>
-  </object>
+    </property>
+  </template>
 </interface>

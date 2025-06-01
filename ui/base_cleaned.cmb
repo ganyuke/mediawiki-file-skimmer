@@ -3,13 +3,13 @@
 <!-- Created with Cambalache 0.96.1 -->
 <cambalache-project version="0.96.0" target_tk="gtk-4.0">
   <css filename="editor.css" is_global="1"/>
-  <ui template-class="MediaWikiViewerWindow" filename="base_cleaned.ui" sha256="b9093b9b6fcc8f53b6a0db921190ffd448f62675e207cb5e0de681163dc92926"/>
+  <ui template-class="MediaWikiViewerWindow" filename="base_cleaned.ui" sha256="f1917958d7dd8d9eb175e4ccd5abf342253f696cdf98e719f19408159c9249d7"/>
   <ui template-class="SidebarLinkRow" filename="linked_item.ui" sha256="392440f4277eeb739a0b0ae0ec58eeec1be186fbb54180112ed2492bf0fd7966"/>
   <ui template-class="MediaWikiQueueDialog" filename="queue.ui" sha256="083ff729c470ec74649f7ebdfabcc86ce7650dadf1094fabe23d87fc1b725c8b"/>
   <ui template-class="MediaWikiQueueItem" filename="queue_item.ui" sha256="7423188a63d139dad819d8e6fa639070ebaaeb6e10a3b1b11e1fbc6b51ed44e1"/>
   <ui template-class="staging-dialog" filename="submission_modal.ui" sha256="3c31423b382b411b84b4b186f5f96f0f3568e13764f02efd5ab8e2f880963676">
     <css-provider>editor.css</css-provider>
   </ui>
-  <ui template-class="publish-dialog" filename="publish_modal.ui" sha256="34d34b226109b49c0af0e0616893f4933219626689d06f32cc90eea4f6a006d4"/>
-  <ui filename="publish_modal_item.ui" sha256="129dade2425e0dbc59fc3e17a63efd3562efbdd66b5f90e64122288ee3e4e0ca"/>
+  <ui template-class="MediaWikiPublishDialog" filename="publish_modal.ui" sha256="010a9a4f655d8781a38a7e161a3b757ec754118c2eb3d1cc70d6a29782ac4daa"/>
+  <ui template-class="MediaWikiPublishRow" filename="publish_modal_item.ui" sha256="dff846180ea7e593f8a39b984fe329ab1429eb6fb8639c561dd6b3a419b64182"/>
 </cambalache-project>

@@ -139,6 +139,8 @@ class LoginControls:
 class InteractableAreas:
     content_container: Gtk.Box
     navigation_container: Gtk.Box
+    right_edit_panel: Gtk.Box
+    file_entry_container: Gtk.Box
 
 @dataclass(frozen=True)
 class EditorWidgets:
@@ -151,12 +153,24 @@ class EditorWidgets:
     int_areas: InteractableAreas
 
 @dataclass(frozen=True)
-class PublishPayload:
+class ModificationPayload:
     original_title: str
-    summary: str = ""
-    reason: str = ""
     new_title: str | None = None
     new_text: str | None = None
+
+@dataclass(frozen=True)
+class PublishConfig:
+    edit_summary: str
+    move_reason: str
+    minor_edit: bool
+    move_talk: bool
+    move_subpage: bool
+    leave_redirect: bool
+
+@dataclass(frozen=True)
+class PublishPayload:
+    changes: list[ModificationPayload]
+    config: PublishConfig
 
 class PublishStage(Enum):
     EDIT = "edit"
@@ -166,8 +180,9 @@ class PublishStage(Enum):
 # Publish modal icons
 @dataclass
 class StatusVisual:
-    icon: str
+    icon: str | None
     tooltip: str
+    label: str
 
 class StatusState(Enum):
     OK = "ok"
@@ -181,13 +196,13 @@ class StatusState(Enum):
     DELAYED = "delayed"
 
 STATUS_ICONS: dict[StatusState, StatusVisual] = {
-    StatusState.OK: StatusVisual("emblem-ok-symbolic", "Operation completed."),
-    StatusState.FAIL: StatusVisual("dialog-error-symbolic", "Operation failed."),
-    StatusState.SCHEDULED: StatusVisual("content-loading-symbolic", "Operation scheduled."),
-    StatusState.NOT_SCHEDULED: StatusVisual("changes-prevent-symbolic", "Operation not scheduled."),
-    StatusState.ABORTED: StatusVisual("face-crying-symbolic", "Operation cancelled."),
-    StatusState.INCOMPLETE: StatusVisual("dialog-warning-symbolic", "Operation partially completed."),
-    StatusState.IN_PROGRESS: StatusVisual("", "Operation in progress."),
-    StatusState.INVALID: StatusVisual("dialog-warning-symbolic", "Operation skipped. No modifications were made."),
-    StatusState.DELAYED: StatusVisual("face-tired-symbolic", "Operation pausing to appease API.")
+    StatusState.OK: StatusVisual("emblem-ok-symbolic", "Operation completed.", "Finished"),
+    StatusState.FAIL: StatusVisual("dialog-error-symbolic", "Operation failed.", "Failed."),
+    StatusState.SCHEDULED: StatusVisual("content-loading-symbolic", "Operation scheduled.", ""),
+    StatusState.NOT_SCHEDULED: StatusVisual("changes-prevent-symbolic", "Operation not scheduled.", "Skipped"),
+    StatusState.ABORTED: StatusVisual("face-crying-symbolic", "Operation cancelled.", "Aborted"),
+    StatusState.INCOMPLETE: StatusVisual("dialog-warning-symbolic", "Operation partially completed.", "Incomplete"),
+    StatusState.IN_PROGRESS: StatusVisual(None, "Operation in progress.", "Publishing..."),
+    StatusState.INVALID: StatusVisual("dialog-warning-symbolic", "Operation skipped. No modifications were made.", "Invalid"),
+    StatusState.DELAYED: StatusVisual("face-tired-symbolic", "Operation pausing to appease API.", "Delayed")
 }

@@ -3,8 +3,9 @@
 <interface>
   <!-- interface-name publish_modal.ui -->
   <requires lib="gtk" version="4.0"/>
-  <template class="publish-dialog" parent="GtkWindow">
+  <template class="MediaWikiPublishDialog" parent="GtkWindow">
     <property name="accessible-role">dialog</property>
+    <property name="deletable">False</property>
     <property name="modal">True</property>
     <property name="title">Publish changes</property>
     <child>
@@ -44,279 +45,6 @@
                     <child>
                       <object class="GtkListBox" id="publish-review-listbox">
                         <property name="vexpand">True</property>
-                        <child>
-                          <object class="GtkListBoxRow">
-                            <child>
-                              <object class="GtkBox">
-                                <property name="spacing">12</property>
-                                <child>
-                                  <object class="GtkLabel" id="publish-page-label">
-                                    <property name="ellipsize">end</property>
-                                    <property name="label">File:Example.jpg</property>
-                                    <property name="width-request">100</property>
-                                    <property name="wrap">True</property>
-                                    <property name="wrap-mode">char</property>
-                                    <property name="xalign">0.0</property>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkBox">
-                                    <property name="halign">end</property>
-                                    <property name="hexpand">True</property>
-                                    <property name="spacing">4</property>
-                                    <property name="width-request">130</property>
-                                    <child>
-                                      <object class="GtkLabel" id="publish-status-label">
-                                        <property name="ellipsize">end</property>
-                                        <property name="hexpand">True</property>
-                                        <property name="label">Delayed (49s)</property>
-                                        <property name="tooltip-text">50 second delay</property>
-                                        <property name="xalign">0.0</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkSpinner">
-                                        <property name="spinning">True</property>
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkImage" id="publish-checkmark-label">
-                                        <property name="icon-name">emblem-ok-symbolic</property>
-                                        <property name="tooltip-text">Operation ccomplete.</property>
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkListBoxRow">
-                            <child>
-                              <object class="GtkBox">
-                                <property name="spacing">12</property>
-                                <child>
-                                  <object class="GtkLabel" id="publish-page-label_2">
-                                    <property name="label">new page</property>
-                                    <property name="wrap">True</property>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkBox">
-                                    <property name="halign">end</property>
-                                    <property name="hexpand">True</property>
-                                    <property name="spacing">4</property>
-                                    <child>
-                                      <object class="GtkLabel" id="publish-status-label_2">
-                                        <property name="label">Done!</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkSpinner">
-                                        <property name="spinning">True</property>
-                                        <property name="tooltip-text">Operation in progress.</property>
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkImage" id="publish-checkmark-label_2">
-                                        <property name="tooltip-text">Operation not staged.</property>
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkListBoxRow">
-                            <property name="tooltip-text">Operation failed.</property>
-                            <child>
-                              <object class="GtkBox">
-                                <property name="spacing">12</property>
-                                <child>
-                                  <object class="GtkLabel" id="publish-page-label_3">
-                                    <property name="label">new page</property>
-                                    <property name="wrap">True</property>
-                                    <property name="xalign">0.0</property>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkBox">
-                                    <property name="halign">end</property>
-                                    <property name="hexpand">True</property>
-                                    <child>
-                                      <object class="GtkLabel" id="publish-status-label_3">
-                                        <property name="label">Uploading...</property>
-                                        <property name="xalign">0.0</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkSpinner">
-                                        <property name="spinning">True</property>
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkImage" id="publish-checkmark-label_3">
-                                        <property name="icon-name">dialog-error-symbolic</property>
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkListBoxRow">
-                            <child>
-                              <object class="GtkBox">
-                                <property name="spacing">12</property>
-                                <child>
-                                  <object class="GtkLabel" id="publish-page-label_4">
-                                    <property name="ellipsize">end</property>
-                                    <property name="label">new page</property>
-                                    <property name="width-request">50</property>
-                                    <property name="wrap">True</property>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkBox">
-                                    <property name="halign">end</property>
-                                    <property name="hexpand">True</property>
-                                    <property name="spacing">4</property>
-                                    <property name="width-request">130</property>
-                                    <child>
-                                      <object class="GtkLabel" id="publish-status-label_4">
-                                        <property name="hexpand">True</property>
-                                        <property name="label">Done!</property>
-                                        <property name="xalign">0.0</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkSpinner">
-                                        <property name="spinning">True</property>
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkImage" id="publish-checkmark-label_4">
-                                        <property name="icon-name">content-loading-symbolic</property>
-                                        <property name="tooltip-text">Operation scheduled.</property>
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkListBoxRow">
-                            <child>
-                              <object class="GtkBox">
-                                <property name="spacing">12</property>
-                                <child>
-                                  <object class="GtkLabel" id="publish-page-label_5">
-                                    <property name="ellipsize">end</property>
-                                    <property name="label">File:Example.jpg</property>
-                                    <property name="width-request">100</property>
-                                    <property name="wrap">True</property>
-                                    <property name="wrap-mode">char</property>
-                                    <property name="xalign">0.0</property>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkBox">
-                                    <property name="halign">end</property>
-                                    <property name="hexpand">True</property>
-                                    <property name="spacing">4</property>
-                                    <property name="width-request">130</property>
-                                    <child>
-                                      <object class="GtkLabel" id="publish-status-label_5">
-                                        <property name="ellipsize">end</property>
-                                        <property name="hexpand">True</property>
-                                        <property name="label">Delayed (49s)</property>
-                                        <property name="tooltip-text">50 second delay</property>
-                                        <property name="xalign">0.0</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkSpinner">
-                                        <property name="spinning">True</property>
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkImage" id="publish-checkmark-label_5">
-                                        <property name="icon-name">channel-insecure-symbolic</property>
-                                        <property name="tooltip-text">Operation aborted. Partially completed.</property>
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkListBoxRow">
-                            <child>
-                              <object class="GtkBox">
-                                <property name="spacing">12</property>
-                                <child>
-                                  <object class="GtkLabel" id="publish-page-label_6">
-                                    <property name="ellipsize">end</property>
-                                    <property name="label">File:Example.jpg</property>
-                                    <property name="width-request">100</property>
-                                    <property name="wrap">True</property>
-                                    <property name="wrap-mode">char</property>
-                                    <property name="xalign">0.0</property>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkBox">
-                                    <property name="halign">end</property>
-                                    <property name="hexpand">True</property>
-                                    <property name="spacing">4</property>
-                                    <property name="width-request">130</property>
-                                    <child>
-                                      <object class="GtkLabel" id="publish-status-label_6">
-                                        <property name="ellipsize">end</property>
-                                        <property name="hexpand">True</property>
-                                        <property name="label">Delayed (49s)</property>
-                                        <property name="tooltip-text">50 second delay</property>
-                                        <property name="xalign">0.0</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkSpinner">
-                                        <property name="spinning">True</property>
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkImage" id="publish-checkmark-label_6">
-                                        <property name="icon-name">face-crying-symbolic</property>
-                                        <property name="tooltip-text">Operation aborted.</property>
-                                        <property name="visible">False</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
                       </object>
                     </child>
                   </object>
@@ -353,7 +81,6 @@
                   <object class="GtkBox" id="move-reason-container">
                     <property name="orientation">vertical</property>
                     <property name="spacing">8</property>
-                    <property name="visible">False</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="css-classes">heading</property>
@@ -370,12 +97,51 @@
                 </child>
                 <child>
                   <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
+                    <child>
+                      <object class="GtkCheckButton" id="minor-edit-checkbox">
+                        <property name="label">Minor edit</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkExpander">
+                        <property name="child">
+                          <object class="GtkBox" id="move-options-container">
+                            <property name="orientation">vertical</property>
+                            <child>
+                              <object class="GtkCheckButton" id="move-talk-checkbox">
+                                <property name="active">True</property>
+                                <property name="label">Move talk pages</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkCheckButton" id="move-subpage-checkbox">
+                                <property name="active">True</property>
+                                <property name="label">Move subpages</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkCheckButton" id="leave-redirect-checkbox">
+                                <property name="active">True</property>
+                                <property name="label">Leave redirects</property>
+                              </object>
+                            </child>
+                          </object>
+                        </property>
+                        <property name="label">Move options</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox" id="button-controls-container">
                     <property name="halign">end</property>
                     <property name="spacing">12</property>
                     <property name="valign">end</property>
                     <property name="vexpand">True</property>
                     <child>
-                      <object class="GtkButton" id="cancel-submit-button">
+                      <object class="GtkButton" id="cancel-publish-button">
                         <property name="label">Cancel</property>
                         <signal name="clicked" handler="cancel-publish-button-clicked"/>
                       </object>

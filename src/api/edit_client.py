@@ -4,6 +4,7 @@ from typing import Callable, Protocol, TypeVar
 import httpx
 from pydantic import BaseModel, ValidationError
 from api.databags import EditResponse, ErrorResponse, ErrorResult, MediaWikiResult, MoveResponse, ResponseStatus
+from app.databags import PublishConfig
 
 M = TypeVar("M", bound=BaseModel)
 
@@ -143,7 +144,7 @@ class MediaWikiEditClient:
         self,
         title: str,
         new_text: str,
-        summary: str = "",
+        config: PublishConfig,
     ) -> MediaWikiResult[EditResponse]:
         token_result = await self._http_client.get_csrf_token()
         if (token_result.status is not ResponseStatus.OK or token_result.data is None):
@@ -155,8 +156,8 @@ class MediaWikiEditClient:
             "action": "edit",
             "title": self._debug_prefix + title,
             "text": new_text,
-            "summary": summary,
-            "minor": "1",
+            "summary": config.edit_summary,
+            "minor": "1" if config.minor_edit else "0",
             "bot": "1",
             "token": token_result.data,
             "format": "json",
@@ -168,7 +169,7 @@ class MediaWikiEditClient:
         self,
         title: str,
         new_title: str,
-        reason: str = "",
+        config: PublishConfig,
     ) -> MediaWikiResult[MoveResponse]:
         token_result = await self._http_client.get_csrf_token()
         if (token_result.status is not ResponseStatus.OK or token_result.data is None):
@@ -180,10 +181,10 @@ class MediaWikiEditClient:
             "action": "move",
             "from":  self._debug_prefix + title,
             "to": self._debug_prefix + new_title,
-            "reason": reason,
-            "movetalk": "1",
-            "movesubpages": "1",
-            "noredirect": "0",
+            "reason": config.move_reason,
+            "movetalk": "1" if config.move_subpage else "0",
+            "movesubpages": "1" if config.move_subpage else "0",
+            "noredirect": "1" if not config.leave_redirect else "0",
             "token": token_result.data,
             "format": "json",
         }

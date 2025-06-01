@@ -34,3 +34,7 @@ class SidebarLinkRow(Gtk.ListBoxRow):
         _ = self._rename_button.connect("clicked", self.rename_select_button_clicked)
         _ = self._link_paste_button.connect("clicked", self.link_paste_button_clicked)
 
+    def set_button_status(self, enable: bool):
+        self._rename_button.set_sensitive(enable)
+        self._link_paste_button.set_sensitive(enable)
+
