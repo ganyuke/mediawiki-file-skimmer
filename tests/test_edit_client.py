@@ -5,8 +5,12 @@ from api.databags import MediaWikiResult, ResponseStatus
 from api.edit_client import MediaWikiEditClient, MediaWikiEditProtocol
 import pytest
 
+from app.databags import PublishConfig
+
 JSONPrimitive = str | int | float | bool | None
 JSONType = JSONPrimitive | list["JSONType"] | dict[str, "JSONType"]
+
+CONFIG = PublishConfig("summary", "reason", True, True, True, True)
 
 # ── fake async http layer ───────────────────────────────────────────────────
 class FakeDriver(MediaWikiEditProtocol):
@@ -57,7 +61,7 @@ async def test_happy_path():
     driver = FakeDriver([mw_ok_edit()])
     client = MediaWikiEditClient(driver, asyncio.Event(), on_status=ui_status)
 
-    res = await client.edit_page("File:A.jpg", "new wikitext")
+    res = await client.edit_page("File:A.jpg", "new wikitext",CONFIG)
     print("Result:", res.status)
 
 @pytest.mark.asyncio
@@ -67,7 +71,7 @@ async def test_maxlag_then_ok():
     ev = asyncio.Event()
     client = MediaWikiEditClient(driver, ev, min_interval=0.1, on_status=ui_status)
 
-    res = await client.edit_page("File:B.jpg", "new text")
+    res = await client.edit_page("File:B.jpg", "new text", CONFIG)
     print("Result:", res.status)
 
 @pytest.mark.asyncio
@@ -80,7 +84,7 @@ async def test_abort_mid_backoff():
     # schedule abort in 0.2s (during backoff sleep)
     _ = asyncio.get_event_loop().call_later(0.2, abort_flag.set)
 
-    res = await client.edit_page("File:C.jpg", "text")
+    res = await client.edit_page("File:C.jpg", "text", CONFIG)
     print("Result:", res.status)
 
 # ── run all tests ───────────────────────────────────────────────────────────

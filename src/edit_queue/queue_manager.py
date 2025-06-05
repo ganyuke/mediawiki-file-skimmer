@@ -102,7 +102,7 @@ class QueueManager:
             self.staged_list.remove(target_title)
 
     def mark_entry_submitted(self, target_title: str):
-        self.staged_list.add(target_title)
+        self.submit_list.add(target_title)
 
     def get_staged_pages(self) -> list[str]:
         return [title for title in self.queue_list if title in self.staged_list]

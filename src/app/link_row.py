@@ -10,8 +10,8 @@ class SidebarLinkRow(Gtk.ListBoxRow):
     '''
     __gtype_name__: str = "SidebarLinkRow"
     __gsignals__: dict[str, tuple[int, None | type, tuple[type, ...]]] = {
-        "request-rename": (GObject.SIGNAL_RUN_FIRST, None, (str,)),
-        "request-paste": (GObject.SIGNAL_RUN_FIRST, None, (str,)),
+        "request-rename": (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        "request-paste": (GObject.SignalFlags.RUN_FIRST, None, (str,)),
     }
 
     _title: str

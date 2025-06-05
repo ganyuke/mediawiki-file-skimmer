@@ -28,7 +28,6 @@
                 <property name="ellipsize">end</property>
                 <property name="hexpand">True</property>
                 <property name="label">Delayed (49s)</property>
-                <property name="tooltip-text">50 second delay</property>
                 <property name="xalign">0.0</property>
               </object>
             </child>
@@ -36,16 +35,24 @@
               <object class="GtkStack" id="edit_stack">
                 <property name="transition-type">over-right-left</property>
                 <child>
-                  <object class="GtkSpinner" id="edit_status_spinner">
-                    <property name="spinning">True</property>
-                    <property name="visible">False</property>
+                  <object class="GtkStackPage">
+                    <property name="child">
+                      <object class="GtkSpinner" id="edit_status_spinner">
+                        <property name="spinning">True</property>
+                      </object>
+                    </property>
+                    <property name="name">spinner</property>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkImage" id="edit_status_icon">
-                    <property name="icon-name">emblem-ok-symbolic</property>
-                    <property name="tooltip-text">Operation ccomplete.</property>
-                    <property name="visible">False</property>
+                  <object class="GtkStackPage">
+                    <property name="child">
+                      <object class="GtkImage" id="edit_status_icon">
+                        <property name="icon-name">emblem-ok-symbolic</property>
+                        <property name="tooltip-text">Operation ccomplete.</property>
+                      </object>
+                    </property>
+                    <property name="name">icon</property>
                   </object>
                 </child>
               </object>
@@ -54,16 +61,24 @@
               <object class="GtkStack" id="move_stack">
                 <property name="transition-type">over-right-left</property>
                 <child>
-                  <object class="GtkSpinner" id="move_status_spinner">
-                    <property name="spinning">True</property>
-                    <property name="visible">False</property>
+                  <object class="GtkStackPage">
+                    <property name="child">
+                      <object class="GtkSpinner" id="move_status_spinner">
+                        <property name="spinning">True</property>
+                      </object>
+                    </property>
+                    <property name="name">spinner</property>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkImage" id="move_status_icon">
-                    <property name="icon-name">emblem-ok-symbolic</property>
-                    <property name="tooltip-text">Operation ccomplete.</property>
-                    <property name="visible">False</property>
+                  <object class="GtkStackPage">
+                    <property name="child">
+                      <object class="GtkImage" id="move_status_icon">
+                        <property name="icon-name">emblem-ok-symbolic</property>
+                        <property name="tooltip-text">Operation ccomplete.</property>
+                      </object>
+                    </property>
+                    <property name="name">icon</property>
                   </object>
                 </child>
               </object>

@@ -84,7 +84,7 @@ class CategoryInfo(BaseModel):
     subcats: int
 
 class CategoryPage(BaseModel):
-    pageid: int
+    # pageid: int
     ns: int
     title: str
     categoryinfo: CategoryInfo

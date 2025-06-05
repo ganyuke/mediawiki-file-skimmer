@@ -23,7 +23,7 @@ class PublishRow(Gtk.ListBoxRow):
     def __init__(self, title: str) -> None:
         super().__init__()
         self._publish_page_label.set_label(title)
-        self.set_status(PublishStage.MOVE, STATUS_ICONS[StatusState.SCHEDULED])
+        self.set_status(PublishStage.EDIT, STATUS_ICONS[StatusState.SCHEDULED])
         self.set_status(PublishStage.MOVE, STATUS_ICONS[StatusState.SCHEDULED])
 
     def set_status(
@@ -31,6 +31,11 @@ class PublishRow(Gtk.ListBoxRow):
         stage: PublishStage,
         visual: StatusVisual
     ) -> None:
+        self._publish_status_label.set_label(visual.label)
+
+        if stage == PublishStage.DONE:
+            return
+    
         match stage:
             case PublishStage.EDIT:
                 stack = self._edit_stack
@@ -40,10 +45,9 @@ class PublishRow(Gtk.ListBoxRow):
                 stack = self._move_stack
                 spinner = self._move_status_spinner
                 icon = self._move_status_icon
-            case _:
-                raise ValueError("Unknown stage; expected 'edit' or 'move'.")
+            #case _:
+            #    raise ValueError("Unknown stage; expected 'edit' or 'move'.")
 
-        self._publish_status_label.set_label(visual.label)
         tooltip = visual.tooltip
         spinner.set_tooltip_text(tooltip)
         icon.set_tooltip_text(tooltip)

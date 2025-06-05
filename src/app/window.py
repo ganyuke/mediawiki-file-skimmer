@@ -31,10 +31,11 @@ from app.databags import (
     LogoutOK,
     Msg,
     NavigationControls,
-    PublishConfig,
     PublishPayload,
+    PublishStage,
     StagingUpdated,
     StartAsync,
+    StatusState,
     Thaw,
     TopLevelControls
 )
@@ -373,7 +374,7 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
 
         if (current_page.is_staged):
             self._queue_manager.set_entry_staged(original_title, False)
-            self._dispatch(StagingUpdated(False))
+            self._dispatch(StagingUpdated(False, original_title != current_page.title))
         else:
             modified_title = current_page.title
             modified_text = current_page.wikitext
@@ -387,7 +388,7 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
                 if (self._queue_manager is None):
                     return
                 self._queue_manager.set_entry_staged(original_title)
-                self._dispatch(StagingUpdated(True))
+                self._dispatch(StagingUpdated(True, original_title != current_page.title))
 
             dialog = StagingDialog(self, original_title, original_text, modified_title, modified_text)
             _ = dialog.connect('confirmed', stage_content)
@@ -403,20 +404,31 @@ class MediaWikiViewerWindow(Gtk.ApplicationWindow):
             dialog = PublishDialog(self)
             self._publish_dialog = dialog
 
+            def status_updater(title: str | None, stage: PublishStage, status: StatusState | None, override_tooltip: str | None):
+                def buffer():
+                    if (self._queue_manager is None):
+                        return
+                    if (title is not None and stage == PublishStage.DONE and status == StatusState.OK):
+                        self._queue_manager.mark_entry_submitted(title)
+
+                    dialog.update_child(title, stage, status, override_tooltip)
+
+                _ = GLib.idle_add(buffer)
+
             publish_queue = self._publish_handler
             if (publish_queue is None):
-                publish_queue = UploadQueue(deps=self._deps, ui_notifier=dialog.update_child)
+                publish_queue = UploadQueue(deps=self._deps, status_updater=status_updater)
                 self._publish_handler = publish_queue
 
-            payloads = self._queue_manager.get_staged_payloads()
-
-            def publish(config: PublishConfig):
+            def publish(_dialog: PublishDialog):
                 if (self._queue_manager is None):
                     return
+                payloads = self._queue_manager.get_staged_payloads()
+                config = dialog.get_publish_config()
                 publish_payload = PublishPayload(changes=payloads, config=config)
                 publish_queue.publish_all(publish_payload)
 
-            def abort():
+            def abort(_dialog: PublishDialog):
                 publish_queue.abort()
 
             _ = dialog.connect("confirmed", publish)

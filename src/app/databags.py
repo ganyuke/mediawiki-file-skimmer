@@ -72,6 +72,7 @@ class FailedBatchLoad:
 @dataclass(frozen=True)
 class StagingUpdated:
     status: bool
+    renamed: bool # this doens't get updated live
 
 Msg = HydrateCurrent | StartAsync | EndAsync | LoginOK | LogoutOK | AuthError | CategoryUpdated | AutofillRename | AutofillBody | Thaw | FailedBatchLoad | StagingUpdated
 

@@ -157,11 +157,14 @@ class MediaWikiEditClient:
             "title": self._debug_prefix + title,
             "text": new_text,
             "summary": config.edit_summary,
-            "minor": "1" if config.minor_edit else "0",
             "bot": "1",
             "token": token_result.data,
             "format": "json",
         }
+
+        if config.minor_edit:
+            edit_param["minor"] = "1"
+
 
         return await self._perform(edit_param, EditResponse)
 
@@ -182,11 +185,15 @@ class MediaWikiEditClient:
             "from":  self._debug_prefix + title,
             "to": self._debug_prefix + new_title,
             "reason": config.move_reason,
-            "movetalk": "1" if config.move_subpage else "0",
-            "movesubpages": "1" if config.move_subpage else "0",
-            "noredirect": "1" if not config.leave_redirect else "0",
+            # "movesubpages": "1" if config.move_subpage else "0", # `File:` does not support subpages
             "token": token_result.data,
             "format": "json",
         }
-    
+
+        # MediaWiki API seems to not like it if this is even specified
+        if not config.leave_redirect:
+            move_param["noredirect"] = "1"
+        if config.move_talk:
+            move_param["movetalk"] = "1"
+
         return await self._perform(move_param, MoveResponse)

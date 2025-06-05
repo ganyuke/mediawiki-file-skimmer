@@ -13,7 +13,7 @@ class PublishDialog(Gtk.Window):
     '''
     __gtype_name__: str = "MediaWikiPublishDialog"
     __gsignals__: dict[str, tuple[int, None | type, tuple[type, ...]]] = {
-        "confirmed": (GObject.SignalFlags.RUN_FIRST, PublishConfig, ()),
+        "confirmed": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "aborted": (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
@@ -38,6 +38,7 @@ class PublishDialog(Gtk.Window):
 
     _row_tracker: dict[str, PublishRow]
     _publish_started: bool = False
+    _is_done: bool = False
 
     def __init__(self, parent: Gtk.Window):
         super().__init__()
@@ -61,7 +62,9 @@ class PublishDialog(Gtk.Window):
         
     def update_child(self, title: str | None, stage: PublishStage, status: StatusState | None, override_tooltip: str | None):
         if (title is None or status is None):
-            return # TODO: handle finished queue
+            self.replace_with_done()
+            return
+            
         visual = STATUS_ICONS[status]
 
         if (override_tooltip is not None):
@@ -76,12 +79,18 @@ class PublishDialog(Gtk.Window):
         self.hide()
 
     def on_confirm(self, _button: Gtk.Button) -> None:
+        if (self._is_done):
+            self._confirm_btn.remove_css_class("suggested-action")
+            self._confirm_btn.add_css_class("destructive-action")
+            self._is_done = False
+            self.reset_dialog()
+            self.hide()
+
         if (self._publish_started):
             self.emit("aborted")
-            self._publish_started = False
-            _button.set_label("Publish")
+            self.reset_dialog()
         else:
-            self.emit("confirmed", PublishConfig)
+            self.emit("confirmed")
             self._publish_started = True
             _button.set_label("Abort")
 
@@ -94,3 +103,13 @@ class PublishDialog(Gtk.Window):
             move_subpage=self._move_subpage_checkbox.get_active(),
             leave_redirect=self._leave_redirect_checkbox.get_active(),
         )
+
+    def replace_with_done(self):
+        self._confirm_btn.remove_css_class("destructive-action")
+        self._confirm_btn.add_css_class("suggested-action")
+        self._confirm_btn.set_label("Done")
+        self._is_done = True
+
+    def reset_dialog(self):
+        self._confirm_btn.set_label("Publish")
+        self._publish_started = False

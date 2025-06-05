@@ -10,6 +10,6 @@
   <ui template-class="staging-dialog" filename="submission_modal.ui" sha256="3c31423b382b411b84b4b186f5f96f0f3568e13764f02efd5ab8e2f880963676">
     <css-provider>editor.css</css-provider>
   </ui>
-  <ui template-class="MediaWikiPublishDialog" filename="publish_modal.ui" sha256="010a9a4f655d8781a38a7e161a3b757ec754118c2eb3d1cc70d6a29782ac4daa"/>
-  <ui template-class="MediaWikiPublishRow" filename="publish_modal_item.ui" sha256="dff846180ea7e593f8a39b984fe329ab1429eb6fb8639c561dd6b3a419b64182"/>
+  <ui template-class="MediaWikiPublishDialog" filename="publish_modal.ui" sha256="5158af50180e56194cfecd463fb196fcd72664bfd5b9108c299cf327bb5707d1"/>
+  <ui template-class="MediaWikiPublishRow" filename="publish_modal_item.ui" sha256="cdf32f43b796c8974426884af2585c845f99b81de2d477da27051f06cef4898f"/>
 </cambalache-project>

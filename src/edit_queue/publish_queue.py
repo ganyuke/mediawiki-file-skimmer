@@ -1,25 +1,28 @@
 import asyncio
-from typing import Callable
-from api.databags import ResponseStatus
+from types import CoroutineType
+from typing import Callable, TypeVar
+from api.databags import MediaWikiResult, ResponseStatus
 from api.edit_client import MediaWikiEditClient
 from app.databags import AppDeps, ModificationPayload, PublishConfig, PublishPayload, PublishStage, StatusState
+
+T = TypeVar("T")
 
 class UploadQueue:
     _deps: AppDeps
     _panic_button: asyncio.Event
     _running_task: asyncio.Task[None] | None = None
     _delay: float
-    _ui_notifier: Callable[[str | None, PublishStage, StatusState, str | None], None]
+    _status_updater: Callable[[str | None, PublishStage, StatusState, str | None], None]
 
-    def __init__(self, deps: AppDeps, ui_notifier: Callable[[str | None, PublishStage, StatusState, str | None], None]):
+    def __init__(self, deps: AppDeps, status_updater: Callable[[str | None, PublishStage, StatusState, str | None], None]):
         self._deps = deps
         self._panic_button = asyncio.Event()
         self._delay = 8.0
-        self._ui_notifier = ui_notifier
+        self._status_updater = status_updater
 
     def _notifier(self, title: str | None, stage: PublishStage, status: StatusState, tooltip: str | None = None):
-        if (self._ui_notifier is not None):
-            self._ui_notifier(title, stage, status, tooltip)
+        if (self._status_updater is not None):
+            self._status_updater(title, stage, status, tooltip)
 
     async def _eat_queue(self, payload: PublishPayload):
         edit_client = MediaWikiEditClient(
@@ -51,42 +54,55 @@ class UploadQueue:
         _ = self._deps.event_loop.call_soon_threadsafe(async_task)
 
     async def _post(self, payload: ModificationPayload, config: PublishConfig, edit_client: MediaWikiEditClient):
+        original_title = payload.original_title
+
         if (payload.new_text is None and payload.new_title is None):
             # why would the user want to submit a null edit
-            self._notifier(payload.original_title, PublishStage.DONE, StatusState.INVALID)
+            self._notifier(original_title, PublishStage.DONE, StatusState.INVALID)
             return
+
+        done_edit = True
+        done_move = True
         
+        async def post_to(stage: PublishStage, action: CoroutineType[None, None, MediaWikiResult[T]]) -> bool:
+            self._notifier(original_title, stage, StatusState.IN_PROGRESS)
+
+            def notifier(tooltip: str):
+                self._notifier(original_title, stage, StatusState.DELAYED, tooltip)
+            edit_client.on_status = notifier
+
+            result = await action
+
+            match result.status:
+                case ResponseStatus.OK:
+                    self._notifier(original_title, stage, StatusState.OK)
+                    return True
+                case _:
+                    self._notifier(original_title, stage, StatusState.FAIL)
+            
+            return False
+
+        stage = PublishStage.EDIT
         if (payload.new_text is not None):
-            self._notifier(payload.original_title, PublishStage.EDIT, StatusState.IN_PROGRESS)
+            cort = edit_client.edit_page(title=original_title, new_text=payload.new_text, config=config)
+            done_edit =await post_to(stage, cort)
+        else:
+            self._notifier(original_title, stage, StatusState.NOT_SCHEDULED)
 
-            def notifier(tooltip: str):
-                self._notifier(payload.original_title, PublishStage.EDIT, StatusState.DELAYED, tooltip)
-            edit_client.on_status = notifier
-
-            result = await edit_client.edit_page(title=payload.original_title, new_text=payload.new_text, config=config)
-
-            match result.status:
-                case ResponseStatus.OK:
-                    self._notifier(payload.original_title, PublishStage.EDIT, StatusState.OK)
-                    return
-                case _:
-                    self._notifier(payload.original_title, PublishStage.EDIT, StatusState.FAIL)
-
+        stage = PublishStage.MOVE
         if (payload.new_title is not None):
-            self._notifier(payload.original_title, PublishStage.MOVE, StatusState.IN_PROGRESS)
+            cort = edit_client.move_page(title=original_title, new_title=payload.new_title, config=config)
+            done_move = await post_to(stage, cort)
+        else:
+            self._notifier(original_title, stage, StatusState.NOT_SCHEDULED)            
 
-            def notifier(tooltip: str):
-                self._notifier(payload.original_title, PublishStage.MOVE, StatusState.DELAYED, tooltip)
-            edit_client.on_status = notifier
+        stage = PublishStage.DONE
+        if done_edit and done_move:
+            final_status = StatusState.OK
+        else:
+            final_status = StatusState.FAIL
 
-            result = await edit_client.move_page(title=payload.original_title, new_title=payload.new_title, config=config)
-
-            match result.status:
-                case ResponseStatus.OK:
-                    self._notifier(payload.original_title, PublishStage.MOVE, StatusState.OK)
-                    return
-                case _:
-                    self._notifier(payload.original_title, PublishStage.MOVE, StatusState.FAIL)
+        self._notifier(original_title, stage, final_status)
 
     def abort(self) -> None:
         # editing is dangerous. if a call is in flight,

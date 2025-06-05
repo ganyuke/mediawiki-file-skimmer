@@ -125,9 +125,10 @@ class AppStateController:
                 )
             case FailedBatchLoad():
                 return state
-            case StagingUpdated(status):
+            case StagingUpdated(status, is_renamed):
                 return replace(state,
-                    staged = status
+                    staged = status,
+                    renamed = is_renamed
                 )
 
     async def _set_image_from_url(self, url: str):

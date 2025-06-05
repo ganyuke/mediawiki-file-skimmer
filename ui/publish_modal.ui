@@ -119,6 +119,7 @@
                               <object class="GtkCheckButton" id="move-subpage-checkbox">
                                 <property name="active">True</property>
                                 <property name="label">Move subpages</property>
+                                <property name="visible">False</property>
                               </object>
                             </child>
                             <child>
